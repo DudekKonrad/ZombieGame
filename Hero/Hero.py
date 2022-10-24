@@ -5,7 +5,7 @@ class Hero:
     coordinates = [(0, 0), (0, 0), (0, 0)]
     size = [0, 0]
     speed = 0
-    color = (0, 255, 0)
+    color = (255, 0, 0)
 
     def __init__(self, coordinates, size, speed):
         self.coordinates = coordinates
