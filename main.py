@@ -20,7 +20,7 @@ while running:
     Hero.draw_hero()
     Map.draw_map()
     zombie.kinematic_update()
-    zombie.kinematic_seek()
+    zombie.kinematic_arrive()
 
     zombie.draw()
     pygame.display.update()

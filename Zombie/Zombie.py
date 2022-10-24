@@ -13,8 +13,10 @@ class Zombie:
     steering_linear = [0.0, 0.0]
     steering_angular = 0.0
 
-    target_position = [0.0, 400.0]
+    target_position = [800.0, 700.0]
     max_speed = 10.0
+    target_radius = 0.5
+    time_to_target = 0.25
 
     def __init__(self, radius, position, time, orientation, velocity, rotation, steering_linear, steering_angular):
         self.radius = radius
@@ -28,6 +30,9 @@ class Zombie:
 
     def draw(self):
         pygame.draw.circle(window, self.color, self.position, self.radius)
+        
+        #rysowanie celu do ktorego zmierza zombiak (tylko pomocniczo, potem wyleci)
+        pygame.draw.circle(window, (0,0,255), self.target_position, self.radius)
 
     def kinematic_update(self):
         self.position += np.multiply(self.velocity, self.time)
@@ -41,10 +46,17 @@ class Zombie:
         #skierowanie sie czubkiem zombiaka w kierunku celu
         #w przypadku okregu CHYBA niepotrzebne
 
-    def kinematic_seek(self):
+    def kinematic_arrive(self):
         self.velocity = np.subtract(self.target_position, self.position)
-        normalized_velocity = self.velocity / np.linalg.norm(self.velocity)
-        self.velocity = normalized_velocity
-        self.velocity = np.multiply(self.velocity, self.max_speed)
-        #face direction get_new_orientation()
-        self.rotation = 0.0
+        if np.linalg.norm(self.velocity) < self.target_radius:
+            return #???
+        else:
+            self.velocity = np.divide(self.velocity, self.time_to_target)
+
+            if np.linalg.norm(self.velocity) > self.max_speed:
+                normalized_velocity = self.velocity / np.linalg.norm(self.velocity)
+                self.velocity = normalized_velocity
+                self.velocity = np.multiply(self.velocity, self.max_speed)
+            
+            #face direction get_new_orientation()
+            self.rotation = 0.0
