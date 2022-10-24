@@ -21,5 +21,6 @@ while running:
     Map.draw_map()
     zombie.kinematic_update()
     zombie.kinematic_seek()
+
     zombie.draw()
     pygame.display.update()
