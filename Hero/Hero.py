@@ -1,4 +1,5 @@
 from Variables.global_variables import *
+from math import *
 
 
 class Hero:
@@ -6,6 +7,8 @@ class Hero:
     size = [0, 0]
     speed = 0
     color = (255, 0, 0)
+    old_angle = 0
+    correction_angle = 0
 
     def __init__(self, coordinates, size, speed):
         self.coordinates = coordinates
@@ -22,6 +25,30 @@ class Hero:
             self.step_up()
         if keys[pygame.K_DOWN] and self.coordinates[1][1] < SCREEN_HEIGHT:
             self.step_down()
+
+    def get_center(self):
+        n = len(self.coordinates)
+        cx = sum(p[0] for p in self.coordinates) / n
+        cy = sum(p[1] for p in self.coordinates) / n
+        return cx, cy
+
+    def rotate(self, angle):
+        new_points = []
+        if self.old_angle == angle:
+            return
+        for p in self.coordinates:
+            tx, ty = p[0] - self.get_center()[0], p[1] - self.get_center()[1]
+            new_x = (tx * cos(angle) - ty * sin(angle)) + self.get_center()[0]
+            new_y = (tx * sin(angle) + ty * cos(angle)) + self.get_center()[1]
+            new_points.append((new_x, new_y))
+        self.old_angle = angle
+        self.coordinates = new_points
+
+    def calculate_angle(self, direction):
+        dx, dy = direction[0] - self.get_center()[0], direction[1] - self.get_center()[1]
+        angle = degrees(atan2(dy, dx)) - self.correction_angle
+        self.rotate(radians(angle))
+        self.correction_angle = angle + self.correction_angle
 
     def draw_hero(self):
         self.hero_movement()

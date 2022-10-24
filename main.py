@@ -18,6 +18,7 @@ while running:
             running = False
     # time.sleep(0.5)
     Hero.draw_hero()
+    Hero.calculate_angle(pygame.mouse.get_pos())
     Map.draw_map()
     zombie.kinematic_update()
     zombie.kinematic_arrive()
