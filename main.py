@@ -16,10 +16,11 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    # time.sleep(0.5)
     Hero.draw_hero()
     Hero.calculate_angle(pygame.mouse.get_pos())
     Map.draw_map()
+    for obstacle in Map.obstacles:
+        Hero.check_if_collide(obstacle)
     zombie.kinematic_update()
     zombie.kinematic_arrive()
 

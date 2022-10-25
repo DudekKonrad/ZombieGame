@@ -4,6 +4,7 @@ import pygame
 class Obstacle:
     x = 0
     y = 0
+    position = (x, y)
     radius = 0
     color = (100, 100, 100)
 
@@ -11,7 +12,6 @@ class Obstacle:
         self.x = x
         self.y = y
         self.radius = radius
-
 
     def draw_obstacle(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)

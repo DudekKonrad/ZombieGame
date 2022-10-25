@@ -9,11 +9,16 @@ class Hero:
     color = (255, 0, 0)
     old_angle = 0
     correction_angle = 0
+    collision_circle_r = 0
 
     def __init__(self, coordinates, size, speed):
         self.coordinates = coordinates
         self.size = size
         self.speed = speed
+
+    def get_collision_circle_r(self):
+        h = dist(self.coordinates[0], self.coordinates[1])
+        return 2/3*h
 
     def hero_movement(self):
         keys = pygame.key.get_pressed()
@@ -55,9 +60,6 @@ class Hero:
         window.fill((0, 0, 0))  # odswiezenie ekranu
         pygame.draw.polygon(window, self.color, self.coordinates, 0)
 
-    def obstacle_collision(self):
-        collide = pygame.Rect.colliderect(self.coordinates, Rect(200, 0, 50, 50))
-
     def step_left(self):
         for i in range(3):
             editable_vertex = list(self.coordinates[i])
@@ -81,3 +83,10 @@ class Hero:
             editable_vertex = list(self.coordinates[i])
             editable_vertex[1] += self.speed
             self.coordinates[i] = tuple(editable_vertex)
+
+    def check_if_collide(self, obstacle):
+        if dist(self.get_center(), [obstacle.x, obstacle.y]) <= self.get_collision_circle_r()+obstacle.radius:
+            obstacle.color = (255, 190, 92)
+        else:
+            obstacle.color = (100, 100, 100)
+
