@@ -85,7 +85,7 @@ class Hero:
             self.coordinates[i] = tuple(editable_vertex)
 
     def check_if_collide(self, obstacle):
-        if dist(self.get_center(), [obstacle.x, obstacle.y]) <= self.get_collision_circle_r()+obstacle.radius:
+        if dist(self.get_center(), obstacle.coordinates) <= self.get_collision_circle_r()+obstacle.radius:
             obstacle.color = (255, 190, 92)
         else:
             obstacle.color = (100, 100, 100)

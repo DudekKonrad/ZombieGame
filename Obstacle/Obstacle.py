@@ -2,16 +2,13 @@ import pygame
 
 
 class Obstacle:
-    x = 0
-    y = 0
-    position = (x, y)
+    coordinates = [0, 0]
     radius = 0
     color = (100, 100, 100)
 
-    def __init__(self, x, y, radius):
-        self.x = x
-        self.y = y
+    def __init__(self, coordinates, radius):
+        self.coordinates = coordinates
         self.radius = radius
 
     def draw_obstacle(self, screen):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
+        pygame.draw.circle(screen, self.color, self.coordinates, self.radius)
