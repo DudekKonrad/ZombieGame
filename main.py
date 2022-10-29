@@ -8,7 +8,7 @@ pygame.init()
 Hero = Hero(HERO_START_POSITION, HERO_SIZE, HERO_SPEED)
 Map = Map(window)
 Map.make_map()
-zombie = Zombie(15, [300.0, 300.0], 0.02, 0.0, [0.05, 0.0], 0.0, [0.0, 0.0], 0.0)
+zombie = Zombie()
 #radius, position, time, orientation, velocity, rotation, steering.linear, steering.angular
 
 running = True
@@ -22,8 +22,10 @@ while running:
     Map.draw_map()
     for obstacle in Map.obstacles:
         Hero.check_if_collide(obstacle)
-    zombie.kinematic_update()
-    zombie.kinematic_arrive(Hero.get_center())
-    zombie.collision_avoidance(Map.obstacles)
+    # zombie.kinematic_update()
+    # zombie.kinematic_arrive(Hero.get_center())
+    # zombie.wandering()
+    # zombie.collision_avoidance(Map.obstacles)
+    zombie.update()
     zombie.draw()
     pygame.display.update()
