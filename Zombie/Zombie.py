@@ -16,6 +16,15 @@ def normalize(vector):
     # else:
     #     return current_orientation
 
+def orientation_scalar_to_vector(vector):
+    orientation_vector = [0.0, 0.0]
+    orientation_vector[0] = np.sin(vector)
+    orientation_vector[1] = np.cos(vector)
+    return orientation_vector
+
+def random_binomial():
+    return (random.uniform(0.0, 1.0) - random.uniform(0.0, 1.0))
+
 class Kinematic:
     position = [400.0, 500.0]
     orientation = 0.6
@@ -49,7 +58,7 @@ class Static:
 
 class KinematicSteeringOutput:
     velocity = [1.0, 0.0]
-    rotation = 0.4
+    rotation = 0.9
 
     def __init__(self):
         pass
@@ -89,13 +98,33 @@ class KinematicArrive:
     def print(self):
         print(self.character)
 
+class KinematicWander:
+    character = Static([300.0, 500.0], 0.6)
+    max_speed = 10.0
+    max_rotation = 10.0
+    
+    def __init__(self):
+        pass
+
+    def update_character(self, position, orientation):
+        self.character.position = position
+        self.character.orientation = orientation
+
+    def get_steering(self):
+        steering = KinematicSteeringOutput()
+        steering.velocity = np.multiply(self.max_speed, orientation_scalar_to_vector(self.character.orientation))
+        steering.rotation = np.multiply(random_binomial(), self.max_rotation)
+        return steering
+
+
 class Zombie:
     color = (0, 255, 0)
     radius = 12
     time = 0.5
     kinematic = Kinematic()
     steering = SteeringOutput()
-    kinematic_arrive = KinematicArrive()   
+    kinematic_arrive = KinematicArrive() 
+    kinematic_wander = KinematicWander()  
 
     def __init__(self):
         pass
@@ -103,11 +132,15 @@ class Zombie:
     def draw(self):
         pygame.draw.circle(window, self.color, self.kinematic.position, self.radius)
 
-    def update(self, target_center):
-        self.kinematic_arrive.update_character(self.kinematic.position, self.kinematic.orientation)
-        # self.kinematic_arrive.target.orientation = target_orientation
-        self.kinematic_arrive.target.position = target_center
-        if self.kinematic_arrive.get_steering() != None:
-            self.kinematic.velocity = self.kinematic_arrive.get_steering().velocity
-            self.kinematic.rotation = self.kinematic_arrive.get_steering().rotation
+    # def update(self, target_center): #kinematic arrive
+    #     self.kinematic_arrive.update_character(self.kinematic.position, self.kinematic.orientation)
+    #     self.kinematic_arrive.target.position = target_center
+    #     if self.kinematic_arrive.get_steering() != None:
+    #         self.kinematic.velocity = self.kinematic_arrive.get_steering().velocity
+    #         self.kinematic.rotation = self.kinematic_arrive.get_steering().rotation
+    #     self.kinematic.update(self.steering, self.time)
+    def update(self):
+        self.kinematic_wander.update_character(self.kinematic.position, self.kinematic.orientation)
+        self.kinematic.velocity = self.kinematic_wander.get_steering().velocity
+        self.kinematic.rotation = self.kinematic_wander.get_steering().rotation
         self.kinematic.update(self.steering, self.time)
