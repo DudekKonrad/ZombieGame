@@ -28,6 +28,6 @@ while running:
     # zombie.collision_avoidance(Map.obstacles)
     # zombie.update(Hero.get_center())
     zombie.draw()
-    # zombie.update(Hero.get_center())
-    zombie.update()
+    zombie.update(Hero.get_center())
+    # zombie.update()
     pygame.display.update()
