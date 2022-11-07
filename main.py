@@ -16,7 +16,7 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    time.sleep(0.01)
+    # time.sleep(0.5)
     Hero.draw_hero()
     Hero.calculate_angle(pygame.mouse.get_pos())
     Map.draw_map()
@@ -27,7 +27,8 @@ while running:
     # zombie.wandering()
     # zombie.collision_avoidance(Map.obstacles)
     # zombie.update(Hero.get_center())
-    # zombie.draw()!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    zombie.update(6.0) #testData
-    # zombie.update()
+    zombie.draw()
+    # zombie.update(3.14) #testData
+    # zombie.update([1.0, 2.2])
+    zombie.update()
     pygame.display.update()

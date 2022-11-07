@@ -45,16 +45,16 @@ class Kinematic:
         pass
 
     def update(self, steering, max_speed, time):
-        print("FINAL = ", steering.angular)
-        self.position = np.add(self.position, np.multiply(self.velocity, time))
-        self.orientation = np.add(self.orientation, np.multiply(self.rotation, time))
+        if steering != None:
+            self.position = np.add(self.position, np.multiply(self.velocity, time))
+            self.orientation = np.add(self.orientation, np.multiply(self.rotation, time))
 
-        self.velocity = np.add(self.velocity, np.multiply(steering.linear, time))
-        self.orientation = np.add(self.orientation, np.multiply(steering.angular, time))
+            self.velocity = np.add(self.velocity, np.multiply(steering.linear, time))
+            self.orientation = np.add(self.orientation, np.multiply(steering.angular, time))
 
-        if length(self.velocity) > max_speed:
-            self.velocity = normalize(self.velocity)
-            self.velocity = np.multiply(self.velocity, max_speed)
+            if length(self.velocity) > max_speed:
+                self.velocity = normalize(self.velocity)
+                self.velocity = np.multiply(self.velocity, max_speed)
 
 class SteeringOutput:
     linear = [0.4, 0.0]
@@ -94,7 +94,6 @@ class KinematicArrive:
         # steering.velocity = length(steering.velocity) ?????
 
         if length(steering.velocity) < self.radius:
-            print("RETURN NONE")
             return None
 
         steering.velocity = np.divide(steering.velocity, self.time_to_target)
@@ -173,7 +172,6 @@ class Arrive:
         direction = np.subtract(target.position, self.character.position)
         distance = length(direction)
         if distance < self.target_radius:
-            print("RETURN NONE")
             return None
         if distance > self.slow_radius:
             target_speed = self.max_speed
@@ -209,42 +207,42 @@ class Align:
     def set_target_orientation(self, orientation):
         self.target.orientation = orientation
 
-    def get_steering(self, target):
-        print("target = ", target)
+    def get_steering(self, target): #bez tego target b bierzemu z self.target???
+        # print("target = ", target)
         steering = SteeringOutput()
         rotation = np.subtract(self.target.orientation, self.character.orientation)
-        print("self.target.orientation = ", self.target.orientation)
-        print("self.character.orientation = ", self.character.orientation)
-        print("rotation = ", rotation)
+        # print("self.target.orientation = ", self.target.orientation)
+        # print("self.character.orientation = ", self.character.orientation)
+        # print("rotation = ", rotation)
         rotation = map_to_range(rotation)
-        print("after mapTORange rotation = ", rotation)
+        # print("after mapTORange rotation = ", rotation)
         rotation_size = abs(rotation)
-        print("rotation size = ", rotation_size)
+        # print("rotation size = ", rotation_size)
 
         if rotation_size < self.target_radius:
-            print("if rotation_size < self.target_radius")
+            # print("if rotation_size < self.target_radius")
             return None
 
         if rotation_size > self.slow_radius:
-            print("if rotation_size > self.slow_radius:")
+            # print("if rotation_size > self.slow_radius:")
             target_rotation = self.max_rotation
-            print("target_rotation = ", target_rotation)
+            # print("target_rotation = ", target_rotation)
         else:
-            print("else")
-            print("self.maxRotation = ", self.max_rotation)
-            print("rotationsize = ", rotation_size)
-            print("self.slowradius = ", self.slow_radius)
+            # print("else")
+            # print("self.maxRotation = ", self.max_rotation)
+            # print("rotationsize = ", rotation_size)
+            # print("self.slowradius = ", self.slow_radius)
             target_rotation = np.divide(np.multiply(self.max_rotation, rotation_size), self.slow_radius)
 
-        print("targetrotation = ", target_rotation)
-        print("rotation = ", rotation)
-        print("rotationsize = ", rotation_size)
-        print("np.divide(rotation, rotation_size) = ", np.divide(rotation, rotation_size))
+        # print("targetrotation = ", target_rotation)
+        # print("rotation = ", rotation)
+        # print("rotationsize = ", rotation_size)
+        # print("np.divide(rotation, rotation_size) = ", np.divide(rotation, rotation_size))
         target_rotation = np.multiply(target_rotation, np.divide(rotation, rotation_size))
-        print("targetrotation = ", target_rotation)
-        print("self.characterrotation = ", self.character.rotation)
+        # print("targetrotation = ", target_rotation)
+        # print("self.characterrotation = ", self.character.rotation)
         steering.angular = np.subtract(target_rotation, self.character.rotation)
-        print("steering.angular = ", steering.angular)
+        # print("steering.angular = ", steering.angular)
         steering.angular = np.divide(steering.angular, self.time_to_target)
 
         # angular_acceleration = abs(steering.angular)
@@ -255,45 +253,59 @@ class Align:
         steering.linear = 0.0
         return steering
 
-# class Face(Align):
-#     align = Align()
-#     target = align.target
-#     temporary_target = Kinematic()
+class Face(Align):
+    align = Align()
+    target = align.target
+    temporary_target = Kinematic()
 
-#     def __init__(self):
-#         pass
+    def __init__(self):
+        pass
 
-#     def set_temporary_target(self, temporary_target):
-#         self.temporary_target.position = temporary_target
+    def set_temporary_target(self, temporary_target):
+        self.temporary_target.position = temporary_target
 
-#     def get_steering(self):
-#         direction = np.subtract(self.target.position, self.character.position)
-#         if length(direction) == 0.0:
-#             return self.target
+    def get_steering(self):
+        # print("self.temporary_target.position = ", self.temporary_target.position)
+        # print("self.character.position = ", self.character.position)
+        direction = np.subtract(self.temporary_target.position, self.character.position)
+        # print("direction = ", direction)
+        if length(direction) == 0.0:
+            return self.target
 
-#         self.align.target = self.temporary_target #????? explicit target
-#         self.align.target.orientation = np.arctan2(-direction[0], direction[1])
-#         return self.align.get_steering(self.temporary_target)
+        self.align.target = self.temporary_target #????? explicit target
+        # print("self.align.target = ", self.align.target)
+        # print("direction[0] = ", direction[0])
+        # print("direction[1] = ", direction[1])
+        self.align.target.orientation = np.arctan2(-direction[0], direction[1])
+        # print("self.align.target.orientation = ", self.align.target.orientation)
+        return self.align.get_steering(self.temporary_target)
 
-# class Wander(Face):
-#     wander_offset = 0.01
-#     wander_radius = 0.01
-#     wander_rate = 0.01
-#     wander_orientation = 0.01
-#     max_acceleration = 0.0
-#     face = Face()
+class Wander(Face):
+    wander_offset = 10.0
+    wander_radius = 10.0
+    wander_rate = 10.0
+    wander_orientation = 10.00
+    max_acceleration = 10.0
+    face = Face()
 
-#     def __init__(self):
-#         pass
+    def __init__(self):
+        pass
 
-#     def get_steering(self):
-#         self.wander_orientation = np.add(self.wander_orientation, np.multiply(random_binomial(), self.wander_rate))
-#         target_orientation = np.add(self.wander_orientation, self.character.orientation)
-#         target = np.add(self.character.position, np.multiply(self.wander_offset, orientation_scalar_to_vector(self.character.orientation)))
-#         target = np.add(target, np.multiply(self.wander_radius, orientation_scalar_to_vector(target_orientation)))
-#         steering = self.face.get_steering()
-#         steering.linear = np.multiply(self.max_acceleration, orientation_scalar_to_vector(self.character.orientation))
-#         return steering
+    # def draw_wander_circle(self):
+        # position = self.face.character.position
+        # pygame.draw.circle(window, (255,255,255), position, self.wander_radius)
+
+    def get_steering(self):
+        # print("xd")
+        self.wander_orientation = np.add(self.wander_orientation, np.multiply(random_binomial(), self.wander_rate))
+        target_orientation = np.add(self.wander_orientation, self.character.orientation)
+        target = np.add(self.character.position, np.multiply(self.wander_offset, orientation_scalar_to_vector(self.character.orientation)))
+        target = np.add(target, np.multiply(self.wander_radius, orientation_scalar_to_vector(target_orientation)))
+        self.face.set_temporary_target(target)
+        steering = self.face.get_steering()
+        if steering == None: return None
+        steering.linear = np.multiply(self.max_acceleration, orientation_scalar_to_vector(self.character.orientation))
+        return steering
 
 class VelocityMatch:
     character = Kinematic()
@@ -354,12 +366,13 @@ class Zombie:
     arrive = Arrive()
     pursue = Pursue()
     align = Align()
-    # wander = Wander()
+    face = Face()
+    wander = Wander()
 
     def __init__(self):
         pass
     
-    def draw(self): #nie wywolane!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def draw(self):
         pygame.draw.circle(window, self.color, self.wander.character.position, self.radius)
 
     # def update(self, target_center): #kinematic arrive
@@ -397,13 +410,28 @@ class Zombie:
         # self.pursue.set_temporary_target(target_center)
         # self.pursue.character.update(self.pursue.get_steering(), 0.6, self.time)
 
-    # steering behaviors: align
-    def update(self, target):
-        # print("XD = ", self.wander.get_steering().angular)
-        # print(" ")
-        self.align.set_target_orientation(target)
-        if self.align.get_steering(target) != None:
-            self.align.character.update(self.align.get_steering(target), 0.6, self.time)
-        print(self.align.character.orientation)
-        # print("FINAL angular = ", self.align.get_steering(target).angular)
-        print("\n")
+    # # steering behaviors: align
+    # def update(self, target):
+    #     # print("XD = ", self.wander.get_steering().angular)
+    #     # print(" ")
+    #     self.align.set_target_orientation(target)
+    #     if self.align.get_steering(target) != None:
+    #         self.align.character.update(self.align.get_steering(target), 0.6, self.time)
+    #     # print(self.align.character.orientation)
+    #     # print("FINAL angular = ", self.align.get_steering(target).angular)
+    #     # print("\n")
+
+    # # steering behaviors: face
+    # def update(self, target):
+    #     self.face.set_temporary_target(target)
+    #     self.face.get_steering()
+    #     print(" ")
+    #     # if self.align.get_steering(target) != None:
+    #         # self.align.character.update(self.align.get_steering(target), 0.6, self.time)
+    #     # print(self.align.character.orientation)
+    #     # print("FINAL angular = ", self.align.get_steering(target).angular)
+    #     # print("\n")
+
+    # steering behaviors: wander
+    def update(self):
+        self.wander.character.update(self.wander.get_steering(), 10.6, self.time)
