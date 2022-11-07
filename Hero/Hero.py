@@ -1,5 +1,6 @@
 from Variables.global_variables import *
 from math import *
+from Variables.map_variables import *
 
 
 class Hero:
@@ -15,6 +16,7 @@ class Hero:
         self.coordinates = coordinates
         self.size = size
         self.speed = speed
+        self.collision_circle_r = 2/3*dist(self.coordinates[0], self.coordinates[1])
 
     def get_collision_circle_r(self):
         h = dist(self.coordinates[0], self.coordinates[1])
@@ -22,13 +24,13 @@ class Hero:
 
     def hero_movement(self):
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] and self.coordinates[1][0] > 0:
+        if keys[pygame.K_LEFT] and self.get_center()[0]-self.collision_circle_r > FRAME_SIZE:
             self.step_left()
-        if keys[pygame.K_RIGHT] and self.coordinates[2][0] < SCREEN_WIDTH:
+        if keys[pygame.K_RIGHT] and self.get_center()[0] + self.collision_circle_r < SCREEN_WIDTH - FRAME_SIZE:
             self.step_right()
-        if keys[pygame.K_UP] and self.coordinates[0][1] > 0:
+        if keys[pygame.K_UP] and self.get_center()[1]-self.collision_circle_r > FRAME_SIZE:
             self.step_up()
-        if keys[pygame.K_DOWN] and self.coordinates[1][1] < SCREEN_HEIGHT:
+        if keys[pygame.K_DOWN] and self.get_center()[1]+self.collision_circle_r < SCREEN_HEIGHT-FRAME_SIZE:
             self.step_down()
 
     def get_center(self):
