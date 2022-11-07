@@ -1,4 +1,4 @@
-from math import dist
+import math
 from turtle import distance, pos, position
 from Variables.global_variables import *
 import numpy as np
@@ -25,6 +25,15 @@ def orientation_scalar_to_vector(vector):
 
 def random_binomial():
     return (random.uniform(0.0, 1.0) - random.uniform(0.0, 1.0))
+
+def map_to_range(radian):
+    pom = radian%(2 * math.pi)
+    pom = abs(pom)
+    if pom <= math.pi:
+        radian = pom
+    else:
+        radian = - ((2*math.pi) - pom)
+    return radian
 
 class Kinematic:
     position = [400.0, 500.0]
@@ -182,7 +191,43 @@ class Arrive:
         return steering
 
 
-# class Align
+class Align:
+    character = Kinematic()
+    target = Kinematic()
+    max_angular_acceleration = 0.0 #????array???
+    max_rotation = 0.0 #????array???
+    target_radius = 0.5
+    slow_radius = 0.5
+    time_to_target = 0.1
+
+    def __init__(self):
+        pass
+
+    def get_steering(self, target):
+        steering = SteeringOutput()
+        rotation = np.subtract(target.orientation, self.character.orientation)
+        rotation = map_to_range(rotation)
+        rotation_size = abs(rotation)
+
+        if rotation_size < self.target_radius:
+            return None
+
+        if rotation_size > self.slow_radius:
+            target_rotation = self.max_rotation
+        else:
+            target_rotation = np.divide(np.multiply(self.max_rotation, rotation_size), self.slow_radius)
+
+        target_rotation = np.multiply(target_rotation, np.divide(rotation, rotation_size))
+        steering.angular = np.subtract(target_rotation, self.character.rotation)
+        steering.angular = np.divide(steering.angular, self.time_to_target)
+
+        angular_acceleration = abs(steering.angular)
+        if angular_acceleration > self.max_angular_acceleration:
+            steering.angular = np.divide(steering.angular, angular_acceleration)
+            steering.angular = np.divide(steering.angular, self.max_angular_acceleration)
+
+        steering.linear = 0.0
+        return steering
 
 class VelocityMatch:
     character = Kinematic()
