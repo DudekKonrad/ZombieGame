@@ -50,6 +50,7 @@ class Hero:
 
     def hero_input(self):
         keys = pygame.key.get_pressed()
+        self.calculate_angle(pygame.mouse.get_pos())
         self.hero_movement(keys)
         self.hero_shoot()
 
@@ -94,17 +95,15 @@ class Hero:
                 p3 = np.asarray(obstacle.coordinates)
                 d = norm(np.cross(p2 - p1, p1 - p3)) / norm(p2 - p1)
                 if d <= obstacle.radius:
-                    obstacle.color = (50, 50, 200)
-                else:
-                    obstacle.color = (100, 100, 100)
+                    self.shoot_handled = True
+                    return
+                
             for enemy in self.world.enemies:
                 p3 = np.asarray(enemy.get_character().position)
                 d = norm(np.cross(p2 - p1, p1 - p3)) / norm(p2 - p1)
                 if d <= enemy.radius:
-                    enemy.color = (50, 50, 200)
-                else:
-                    enemy.color = (0, 255, 0)
-            self.shoot_handled = False
+                    self.world.enemies.remove(enemy)
+            self.shoot_handled = True
         if not pygame.mouse.get_pressed()[0]:
             self.shoot_handled = False
 

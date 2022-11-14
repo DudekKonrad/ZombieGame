@@ -17,10 +17,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    # time.sleep(0.5)
     window.fill((0, 0, 0))  # odswiezenie ekranu
     Hero.draw_hero()
-    Hero.calculate_angle(pygame.mouse.get_pos())
     Map.draw_map()
     Hero.hero_input()
 
