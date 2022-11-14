@@ -10,6 +10,7 @@ import math
 class Map:
     screen = None
     obstacles = []
+    enemies = []
 
     def __init__(self, screen):
         self.screen = screen
