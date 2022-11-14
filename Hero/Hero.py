@@ -34,6 +34,7 @@ class Hero:
     color = HERO_COLOR
     collision_circle_r = 0
     world = None
+    killed_enemies = 0
 
     # Temporary Variables:
     old_angle = 0
@@ -85,6 +86,9 @@ class Hero:
     def hero_shoot(self):
         center = get_center(self.coordinates)
         if pygame.mouse.get_pressed()[0] and self.shoot_handled is False:
+            hit_obstacle = False
+            hitted_obstacle = None
+
             mouse_x = pygame.mouse.get_pos()[0]
             mouse_y = pygame.mouse.get_pos()[1]
             self.draw_shoot((mouse_x, mouse_y))
@@ -96,16 +100,35 @@ class Hero:
                 d = norm(np.cross(p2 - p1, p1 - p3)) / norm(p2 - p1)
                 if d <= obstacle.radius:
                     self.shoot_handled = True
-                    return
-                
+                    hit_obstacle = True
+                    hitted_obstacle = obstacle
+
             for enemy in self.world.enemies:
                 p3 = np.asarray(enemy.get_character().position)
                 d = norm(np.cross(p2 - p1, p1 - p3)) / norm(p2 - p1)
                 if d <= enemy.radius:
-                    self.world.enemies.remove(enemy)
-            self.shoot_handled = True
+                    if not hit_obstacle:
+                        if mouse_x > center[0] and enemy.get_character().position[0] > center[0]:
+                            self.kill_enemy(enemy)
+                        if mouse_x < center[0] and enemy.get_character().position[0] < center[0]:
+                            self.kill_enemy(enemy)
+
+                    if hit_obstacle:
+                        dist_to_obstacle = dist(center, hitted_obstacle.coordinates)
+                        dist_to_enemy = dist(center, enemy.get_character().position)
+                        if dist_to_enemy < dist_to_obstacle:
+                            if mouse_x > center[0] and enemy.get_character().position[0] > center[0]:
+                                self.kill_enemy(enemy)
+                            if mouse_x < center[0] and enemy.get_character().position[0] < center[0]:
+                                self.kill_enemy(enemy)
+
+            self.shoot_handled = False
         if not pygame.mouse.get_pressed()[0]:
             self.shoot_handled = False
+
+    def kill_enemy(self, enemy):
+        self.world.enemies.remove(enemy)
+        self.killed_enemies += 1
 
     def draw_shoot(self, destination_point):
         end_position = calculate_laser_direction(get_center(self.coordinates)[0], get_center(self.coordinates)[1],

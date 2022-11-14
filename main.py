@@ -7,7 +7,12 @@ pygame.init()
 
 Map = Map(window)
 Map.make_map()
-zombies = [Zombie([500.0, 500.0]), Zombie([660.0, 600.0]), Zombie([860.0, 600.0])]
+zombies = []
+for i in range(NUMBER_OF_ENEMIES):
+    random_x = random.randint(FRAME_SIZE, SCREEN_WIDTH - FRAME_SIZE)
+    random_y = random.randint(FRAME_SIZE, SCREEN_HEIGHT - FRAME_SIZE)
+    zombies.append(Zombie([random_x, random_y]))
+
 Map.enemies = zombies
 Hero = Hero(HERO_START_POSITION, HERO_SPEED, Map)
 
