@@ -206,9 +206,7 @@ class Align:
     time_to_target = 0.7
 
     def __init__(self, position = [400.0, 600.0]):
-        print("ALign constructor")
         self.character = Kinematic(position)
-        print("self.character = ", self.character)
         self.target = Kinematic()
 
     def get_character(self):
@@ -346,21 +344,59 @@ class Pursue(Seek):
 
         return self.seek.get_steering()
 
+class Separation:
+    character = None
+    targets = []
+    decay_coefficient = 0.6
+    max_acceleration = 4.0
+    threshold = 10.5
+
+    def __init__(self, position, other_zombies):
+        self.character = Kinematic(position)
+        self.targets = other_zombies
+
+    def get_steering(self):
+        steering = SteeringOutput()
+        for target in self.targets:
+            direction = np.subtract(target.get_character().position, self.character.position)
+            distance = length(direction)
+            if distance < self.threshold:
+                strength = min(np.divide(self.decay_coefficient, np.multiply(distance, distance)), self.max_acceleration)
+                direction = normalize(direction)
+                steering.linear = np.add(steering.linear, np.multiply(strength, direction))
+        return steering
+
+    # def print(self):
+        # print("character = ", self.character)
+        # print("targets = ", self.targets)
+
 class Zombie:
     color = (0, 255, 0)
     radius = 8
-    time = 0.01
+    time = 3.03
     wander = None
+    other_zombies = []
+    separation = None
 
     def __init__(self, position):
         self.wander = Wander(position)
 
     def get_character(self):
         return self.wander.get_character()
+
+    def set_other_zombies(self, zombies):
+        self.other_zombies = zombies
+        self.other_zombies.remove(self)
+        self.separation = Separation(self.get_character().position, self.other_zombies)
     
     def draw(self):
         pygame.draw.circle(window, self.color, self.get_character().position, self.radius)
 
     # steering behaviors: wander
     def update(self):
-        self.get_character().update(self.wander.get_steering(), 10.0, self.time)
+        self.get_character().update(self.wander.get_steering(), 5.0, self.time/2)
+        self.get_character().update(self.separation.get_steering(), 5.0, self.time/2)
+        # self.separation.print()
+
+        # linear = [0.4, 0.0]
+        # angular = 0.8

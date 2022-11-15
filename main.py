@@ -7,6 +7,7 @@ pygame.init()
 
 Map = Map(window)
 Map.make_map()
+# zombies = [Zombie([503.0, 400.0]), Zombie([500.0, 400.0]), Zombie([506.0, 400.0])]
 zombies = []
 for i in range(NUMBER_OF_ENEMIES):
     random_x = random.randint(FRAME_SIZE, SCREEN_WIDTH - FRAME_SIZE)
@@ -22,13 +23,14 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    window.fill((0, 0, 0))  # odswiezenie ekranu
     Hero.draw_hero()
     Map.draw_map()
     Hero.hero_input()
 
     for zombie in zombies:
+        zombie.set_other_zombies(zombies[:])
         zombie.draw()
         zombie.update()
+    print("-----------------")
 
     pygame.display.update()
