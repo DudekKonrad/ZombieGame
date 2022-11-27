@@ -373,7 +373,7 @@ class Separation:
 class Zombie:
     color = (0, 255, 0)
     radius = 8
-    time = 3.03
+    time = 0.03
     wander = None
     other_zombies = []
     separation = None

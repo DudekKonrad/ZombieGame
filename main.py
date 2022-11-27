@@ -23,6 +23,7 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+    window.fill((0, 0, 0))  # odswiezenie ekranu
     Hero.draw_hero()
     Map.draw_map()
     Hero.hero_input()
@@ -31,6 +32,5 @@ while running:
         zombie.set_other_zombies(zombies[:])
         zombie.draw()
         zombie.update()
-    print("-----------------")
 
     pygame.display.update()
