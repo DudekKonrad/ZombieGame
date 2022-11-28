@@ -1,5 +1,6 @@
 import math
 from Variables.global_variables import *
+from Variables.zombie_variables import *
 import numpy as np
 import random
 
@@ -178,15 +179,9 @@ class Pursue(Seek):
 
 
 class Zombie(Kinematic):
-    color = (0, 255, 0)
-    radius = 8
-    time = 0.03
-    max_speed = 10
-    max_acceleration = 5
-    max_angular_acceleration = 10.8
-    max_rotation = 900.6
     steering = None
     target = None
+    max_acceleration = 10
 
     def set_target(self, target_position):
         self.target = Static(target_position, 0)
@@ -200,9 +195,9 @@ class Zombie(Kinematic):
             self.steering = Arrive(self, self.target)
 
     def run(self):
-        self.update(self.steering.get_steering(), self.max_speed, self.time)
+        self.update(self.steering.get_steering(), ZOMBIE_MAX_SPEED, ZOMBIE_TIME)
         self.draw()
 
     def draw(self):
-        pygame.draw.circle(window, self.color, self.position, self.radius)
+        pygame.draw.circle(window, ZOMBIE_COLOR, self.position, ZOMBIE_RADIUS)
         pygame.draw.circle(window, (0, 0, 255), self.position, 4)
