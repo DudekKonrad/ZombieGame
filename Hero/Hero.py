@@ -45,7 +45,7 @@ class Hero:
     will_collide = False
     shoot_handled = False
     clock = None
-    destination_point = (0,0)
+    destination_point = (0, 0)
 
     def __init__(self, coordinates, speed, world):
         self.coordinates = coordinates
@@ -54,6 +54,9 @@ class Hero:
         self.collision_circle_r = HERO_HIT_BOX_R
         self.world = world
         self.clock = pygame.time.Clock
+
+    def get_position(self):
+        return get_center(self.coordinates)
 
     def hero_input(self):
         keys = pygame.key.get_pressed()
@@ -127,23 +130,23 @@ class Hero:
                     obstacle.color = (100, 100, 100)
 
             for enemy in self.world.enemies:
-                p3 = np.asarray(enemy.get_character().position)
+                p3 = np.asarray(enemy.position)
                 distance_to_enemy = norm(np.cross(p2 - p1, p1 - p3)) / norm(p2 - p1)
                 distance_to_enemy -= HERO_LASER_SIZE / 2
                 if distance_to_enemy <= enemy.radius:
                     if not if_hit_obstacle:
-                        if mouse_x > center[0] and enemy.get_character().position[0] > center[0]:
+                        if mouse_x > center[0] and enemy.position[0] > center[0]:
                             self.kill_enemy(enemy)
-                        if mouse_x < center[0] and enemy.get_character().position[0] < center[0]:
+                        if mouse_x < center[0] and enemy.position[0] < center[0]:
                             self.kill_enemy(enemy)
 
                     if if_hit_obstacle:
                         player_to_obstacle_distance = dist(center, hit_obstacle.coordinates)
-                        player_to_enemy_distance = dist(center, enemy.get_character().position)
+                        player_to_enemy_distance = dist(center, enemy.position)
                         if player_to_enemy_distance < player_to_obstacle_distance:
-                            if mouse_x > center[0] and enemy.get_character().position[0] > center[0]:
+                            if mouse_x > center[0] and enemy.position[0] > center[0]:
                                 self.kill_enemy(enemy)
-                            if mouse_x < center[0] and enemy.get_character().position[0] < center[0]:
+                            if mouse_x < center[0] and enemy.position[0] < center[0]:
                                 self.kill_enemy(enemy)
 
             self.shoot_handled = True
