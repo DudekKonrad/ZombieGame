@@ -15,7 +15,7 @@ for i in range(NUMBER_OF_ENEMIES):
 
 Map.enemies = zombies
 Hero = Hero(HERO_START_POSITION, HERO_SPEED, Map)
-
+i = 1
 
 running = True
 while running:
@@ -27,9 +27,12 @@ while running:
     Map.draw_map()
     Hero.hero_input()
 
-    for zombie in zombies:
-        zombie.set_target(Hero.get_position())
-        zombie.set_steering("Seek")
-        zombie.run()
+    zombies[0].set_target(Hero.get_position())
+    zombies[0].set_steering("Seek")
+    zombies[0].run()
+
+    for i in range(len(zombies)):
+        zombies[i].set_steering("Wander")
+        zombies[i].run()
 
     pygame.display.update()
