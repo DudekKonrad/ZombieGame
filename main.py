@@ -27,12 +27,22 @@ while running:
     Map.draw_map()
     Hero.hero_input()
 
-    zombies[0].set_target(Hero.get_position())
-    zombies[0].set_steering("Seek")
-    zombies[0].run()
+    # zombies[0].set_target(Hero.get_position())
+    # zombies[0].other_zombies = zombies
+    # zombies[0].set_other_zombies()
+    # zombies[0].set_steering("Seek")
+    # zombies[0].run()
 
-    for i in range(len(zombies)):
-        zombies[i].set_steering("Wander")
-        zombies[i].run()
+    for z in zombies:
+        z.other_zombies = zombies
+        z.set_other_zombies()
+        #z.set_target(Hero.get_position())
+        z.set_steering("Obstacle_Avoidance_Wander")
+        z.run()
+
+    # for i in range(len(zombies)):
+    #     zombies[i].set_target(zombies[0])
+    #     zombies[i].set_steering("Align")
+    #     zombies[i].run()
 
     pygame.display.update()
