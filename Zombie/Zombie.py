@@ -1,9 +1,9 @@
 import math
 import pygame.draw
-from Variables.map_variables import *
-from Variables.zombie_variables import *
 import numpy as np
 import random
+from Variables.map_variables import *
+from Variables.zombie_variables import *
 from numpy.linalg import norm
 
 
@@ -80,7 +80,6 @@ class Kinematic:
 
         # Drawing velocity vector
         pygame.draw.line(window, (0, 0, 255), self.position, self.position + self.velocity, 2)
-
 
         # Drawing orientation
         # vec = pygame.math.Vector2(0, 100).rotate(self.angle)
@@ -294,10 +293,6 @@ class Separation_Wander:
         return x
 
 
-from shapely.geometry import LineString
-from shapely.geometry import Point
-
-
 def circle_line_segment_intersection(circle_center, circle_radius, pt1, pt2, full_line=False, tangent_tol=1e-9):
     (p1x, p1y), (p2x, p2y), (cx, cy) = pt1, pt2, circle_center
     (x1, y1), (x2, y2) = (p1x - cx, p1y - cy), (p2x - cx, p2y - cy)
@@ -323,30 +318,6 @@ def circle_line_segment_intersection(circle_center, circle_radius, pt1, pt2, ful
         else:
             return intersections
 
-
-from shapely.geometry import LineString
-from shapely.geometry import Point
-
-
-def circle_line_segment_intersection2(circle_position, circle_radius, start_line, end_line):
-    # p = Point(5, 5)
-    # c = p.buffer(3).boundary
-    p = Point(circle_position[0], circle_position[1])
-    c = p.buffer(circle_radius).boundary
-    l = LineString([(start_line[0], start_line[1]), (end_line[0], end_line[1])])
-    i = c.intersection(l)
-    # l = LineString([(0, 0), (1, 1)])
-    # i = c.intersection(l)
-    if type(i) is LineString:
-        return False
-    else:
-        x = i.geoms[0].coords[0]
-        y = i.geoms[1].coords[0]
-        return True
-    # print(f"i type: {type(i)}")
-    # print(f"i[0]: {i[0]}")
-    # print(f"Length: {i.length}")
-    # print(f"area: {i.area}")
 
 def line_intersection(line1, line2):
     x1 = float(line1[0][0])
@@ -403,28 +374,28 @@ class Collision:
 
 class Collision_Detector:
     def get_collision(self, position, move_amount):
-        top_collision = line_intersection(TOP_LINE, (position, position + move_amount))
-        left_collision = line_intersection(LEFT_LINE, (position, position + move_amount))
-        right_collision = line_intersection(RIGHT_LINE, (position, position + move_amount))
-        bottom_collision = line_intersection(DOWN_LINE, (position, position + move_amount))
+        top_collision = line_intersection(TOP_BORDER, (position, position + move_amount))
+        left_collision = line_intersection(LEFT_BORDER, (position, position + move_amount))
+        right_collision = line_intersection(RIGHT_BORDER, (position, position + move_amount))
+        bottom_collision = line_intersection(BOTTOM_BORDER, (position, position + move_amount))
         if top_collision is not None:
-            normal_vector = get_normal_vector_down(TOP_LINE)
-            #pygame.draw.line(window, (233, 32, 111), top_collision, normal_vector, 2)
+            normal_vector = get_normal_vector_down(TOP_BORDER)
+            # pygame.draw.line(window, (233, 32, 111), top_collision, normal_vector, 2)
             collision = Collision(top_collision, normal_vector)
             return collision
         if right_collision is not None:
-            normal_vector = get_normal_vector_down(RIGHT_LINE)
-            #pygame.draw.line(window, (233, 32, 111), right_collision, normal_vector, 2)
+            normal_vector = get_normal_vector_down(RIGHT_BORDER)
+            # pygame.draw.line(window, (233, 32, 111), right_collision, normal_vector, 2)
             collision = Collision(right_collision, normal_vector)
             return collision
         if left_collision is not None:
-            normal_vector = get_normal_vector_up(LEFT_LINE)
-            #pygame.draw.line(window, (233, 32, 111), left_collision, normal_vector, 2)
+            normal_vector = get_normal_vector_up(LEFT_BORDER)
+            # pygame.draw.line(window, (233, 32, 111), left_collision, normal_vector, 2)
             collision = Collision(left_collision, normal_vector)
             return collision
         if bottom_collision is not None:
-            normal_vector = get_normal_vector_up(DOWN_LINE)
-            #pygame.draw.line(window, (233, 32, 111), bottom_collision, normal_vector, 2)
+            normal_vector = get_normal_vector_up(BOTTOM_BORDER)
+            # pygame.draw.line(window, (233, 32, 111), bottom_collision, normal_vector, 2)
             collision = Collision(bottom_collision, normal_vector)
             return collision
 
@@ -443,15 +414,19 @@ class ObstacleAvoidance(Seek):
         ray_vector *= self.character.look_ahead
         pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 4)
 
+        # Collision with walls
         collision = self.collision_detector.get_collision(self.character.position, ray_vector)
         if collision is not None:
             self.target.position = np.add(collision.position,
                                           np.multiply(collision.normal, self.character.avoid_distance))
+        # Collision with obstacles NEED FIXES!!!
         for obstacle in self.obstacles:
-            circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius, self.character.position, self.character.position+ray_vector, False)
+            circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius,
+                                                                self.character.position,
+                                                                self.character.position + ray_vector, False)
             if len(circle_collision) > 0:
                 pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
-                end = (-circle_collision[0][0], -circle_collision[0][1])
+                end = (-circle_collision[0][0], -circle_collision[0][1])  # NEED FIX HERE
                 target_pos = np.add(circle_collision[0],
                                     np.multiply(end, self.character.avoid_distance))
                 self.target.position = target_pos
@@ -472,17 +447,22 @@ class ObstacleAvoidanceWander(Wander):
         ray_vector *= self.character.look_ahead
         pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 3)
 
+        # Collision with walls
         collision = self.collision_detector.get_collision(self.character.position, ray_vector)
         if collision is not None:
             target_pos = np.add(collision.position,
                                 np.multiply(collision.normal, self.character.avoid_distance))
             self.target = Static(target_pos, 0)
             return Seek.get_steering(self)
+
+        # Collision with obstacles NEED FIXES
         for obstacle in self.obstacles:
-            circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius, self.character.position, self.character.position+ray_vector, False)
+            circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius,
+                                                                self.character.position,
+                                                                self.character.position + ray_vector, False)
             if len(circle_collision) > 0:
                 pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
-                end = (-circle_collision[0][0], -circle_collision[0][1])
+                end = (-circle_collision[0][0]-10, -circle_collision[0][1]-20)  # FIX HERE
                 target_pos = np.add(circle_collision[0],
                                     np.multiply(end, self.character.avoid_distance))
                 self.target = Static(target_pos, 0)
@@ -524,7 +504,6 @@ class CollisionAvoidance(ObstacleAvoidanceWander):
                 first_relative_pos = relative_pos
                 first_relative_vel = relative_vel
             if not first_target:
-                print(f"No first target")
                 break  # ObstacleAvoidanceWander.get_steering(self)
             if first_min_separation <= 0 or distance < 2 * self.radius:
                 relative_pos = np.subtract(first_target.position, self.character.position)
@@ -532,7 +511,6 @@ class CollisionAvoidance(ObstacleAvoidanceWander):
                 relative_pos = np.add(first_relative_pos, np.multiply(first_relative_vel, shortest_time))
             relative_pos = normalize(relative_pos)
             steering.linear = np.multiply(relative_pos, self.max_acceleration)
-            print(f"Returning steering")
             return steering
         return ObstacleAvoidanceWander.get_steering(self)
 
@@ -544,7 +522,7 @@ class Zombie(Kinematic):
     radius = ZOMBIE_RADIUS
     other_zombies = []
     obstacles = []
-    avoid_distance = 2000
+    avoid_distance = 200
     look_ahead = 40
 
     def set_target(self, target_position):
