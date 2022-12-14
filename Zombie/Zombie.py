@@ -1,12 +1,10 @@
 import math
-
 import pygame.draw
-
-from Variables.global_variables import *
 from Variables.map_variables import *
 from Variables.zombie_variables import *
 import numpy as np
 import random
+from numpy.linalg import norm
 
 
 def length(vector):
@@ -82,12 +80,14 @@ class Kinematic:
 
         # Drawing velocity vector
         pygame.draw.line(window, (0, 0, 255), self.position, self.position + self.velocity, 2)
+
+
         # Drawing orientation
-        vec = pygame.math.Vector2(0, 100).rotate(self.angle)
-        pt_x, pt_y = self.position[0] + vec.x, self.position[1] + vec.y
-        new_o = getNewOrientation(self.rotation, self.velocity)
-        self.angle = math.degrees(new_o)
-        pygame.draw.line(window, (110, 10, 155), self.position, (pt_x, pt_y), 2)
+        # vec = pygame.math.Vector2(0, 100).rotate(self.angle)
+        # pt_x, pt_y = self.position[0] + vec.x, self.position[1] + vec.y
+        # new_o = getNewOrientation(self.rotation, self.velocity)
+        # self.angle = math.degrees(new_o)
+        # pygame.draw.line(window, (110, 10, 155), self.position, (pt_x, pt_y), 2)
 
 
 class SteeringOutput:
@@ -220,7 +220,8 @@ class Wander(Seek):
 
     def get_steering(self):
         self.circle_pos = self.get_circle_pos()
-        target_pos = np.add(self.circle_pos, pygame.math.Vector2(self.wander_ring_distance, 0).rotate(random.uniform(0, 360)))
+        target_pos = np.add(self.circle_pos,
+                            pygame.math.Vector2(self.wander_ring_distance, 0).rotate(random.uniform(0, 360)))
         self.target = Static(target_pos, 0)
         return Seek.get_steering(self)
 
@@ -293,6 +294,60 @@ class Separation_Wander:
         return x
 
 
+from shapely.geometry import LineString
+from shapely.geometry import Point
+
+
+def circle_line_segment_intersection(circle_center, circle_radius, pt1, pt2, full_line=False, tangent_tol=1e-9):
+    (p1x, p1y), (p2x, p2y), (cx, cy) = pt1, pt2, circle_center
+    (x1, y1), (x2, y2) = (p1x - cx, p1y - cy), (p2x - cx, p2y - cy)
+    dx, dy = (x2 - x1), (y2 - y1)
+    dr = (dx ** 2 + dy ** 2) ** .5
+    big_d = x1 * y2 - x2 * y1
+    discriminant = circle_radius ** 2 * dr ** 2 - big_d ** 2
+
+    if discriminant < 0:  # No intersection between circle and line
+        return []
+    else:  # There may be 0, 1, or 2 intersections with the segment
+        intersections = [
+            (cx + (big_d * dy + sign * (-1 if dy < 0 else 1) * dx * discriminant ** .5) / dr ** 2,
+             cy + (-big_d * dx + sign * abs(dy) * discriminant ** .5) / dr ** 2)
+            for sign in ((1, -1) if dy < 0 else (-1, 1))]  # This makes sure the order along the segment is correct
+        if not full_line:  # If only considering the segment, filter out intersections that do not fall within the segment
+            fraction_along_segment = [(xi - p1x) / dx if abs(dx) > abs(dy) else (yi - p1y) / dy for xi, yi in
+                                      intersections]
+            intersections = [pt for pt, frac in zip(intersections, fraction_along_segment) if 0 <= frac <= 1]
+        if len(intersections) == 2 and abs(
+                discriminant) <= tangent_tol:  # If line is tangent to circle, return just one point (as both intersections have same location)
+            return [intersections[0]]
+        else:
+            return intersections
+
+
+from shapely.geometry import LineString
+from shapely.geometry import Point
+
+
+def circle_line_segment_intersection2(circle_position, circle_radius, start_line, end_line):
+    # p = Point(5, 5)
+    # c = p.buffer(3).boundary
+    p = Point(circle_position[0], circle_position[1])
+    c = p.buffer(circle_radius).boundary
+    l = LineString([(start_line[0], start_line[1]), (end_line[0], end_line[1])])
+    i = c.intersection(l)
+    # l = LineString([(0, 0), (1, 1)])
+    # i = c.intersection(l)
+    if type(i) is LineString:
+        return False
+    else:
+        x = i.geoms[0].coords[0]
+        y = i.geoms[1].coords[0]
+        return True
+    # print(f"i type: {type(i)}")
+    # print(f"i[0]: {i[0]}")
+    # print(f"Length: {i.length}")
+    # print(f"area: {i.area}")
+
 def line_intersection(line1, line2):
     x1 = float(line1[0][0])
     y1 = float(line1[0][1])
@@ -354,28 +409,33 @@ class Collision_Detector:
         bottom_collision = line_intersection(DOWN_LINE, (position, position + move_amount))
         if top_collision is not None:
             normal_vector = get_normal_vector_down(TOP_LINE)
-            pygame.draw.line(window, (233, 32, 111), top_collision, normal_vector, 2)
+            #pygame.draw.line(window, (233, 32, 111), top_collision, normal_vector, 2)
             collision = Collision(top_collision, normal_vector)
             return collision
         if right_collision is not None:
             normal_vector = get_normal_vector_down(RIGHT_LINE)
-            pygame.draw.line(window, (233, 32, 111), right_collision, normal_vector, 2)
+            #pygame.draw.line(window, (233, 32, 111), right_collision, normal_vector, 2)
             collision = Collision(right_collision, normal_vector)
             return collision
         if left_collision is not None:
             normal_vector = get_normal_vector_up(LEFT_LINE)
-            pygame.draw.line(window, (233, 32, 111), left_collision, normal_vector, 2)
+            #pygame.draw.line(window, (233, 32, 111), left_collision, normal_vector, 2)
             collision = Collision(left_collision, normal_vector)
             return collision
         if bottom_collision is not None:
             normal_vector = get_normal_vector_up(DOWN_LINE)
-            pygame.draw.line(window, (233, 32, 111), bottom_collision, normal_vector, 2)
+            #pygame.draw.line(window, (233, 32, 111), bottom_collision, normal_vector, 2)
             collision = Collision(bottom_collision, normal_vector)
             return collision
 
 
 class ObstacleAvoidance(Seek):
     collision_detector = Collision_Detector()
+    obstacles = []
+
+    def __init__(self, character, target, obstacles):
+        super().__init__(character, target)
+        self.obstacles = obstacles
 
     def get_steering(self):
         ray_vector = self.character.velocity
@@ -387,43 +447,114 @@ class ObstacleAvoidance(Seek):
         if collision is not None:
             self.target.position = np.add(collision.position,
                                           np.multiply(collision.normal, self.character.avoid_distance))
-
+        for obstacle in self.obstacles:
+            circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius, self.character.position, self.character.position+ray_vector, False)
+            if len(circle_collision) > 0:
+                pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
+                end = (-circle_collision[0][0], -circle_collision[0][1])
+                target_pos = np.add(circle_collision[0],
+                                    np.multiply(end, self.character.avoid_distance))
+                self.target.position = target_pos
         return Seek.get_steering(self)
 
 
 class ObstacleAvoidanceWander(Wander):
     collision_detector = Collision_Detector()
+    obstacles = []
+
+    def __init__(self, character, target, obstacles):
+        super().__init__(character, target)
+        self.obstacles = obstacles
 
     def get_steering(self):
         ray_vector = self.character.velocity
         ray_vector = normalize(ray_vector)
         ray_vector *= self.character.look_ahead
-        pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 4)
+        pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 3)
 
         collision = self.collision_detector.get_collision(self.character.position, ray_vector)
         if collision is not None:
             target_pos = np.add(collision.position,
-                                          np.multiply(collision.normal, self.character.avoid_distance))
+                                np.multiply(collision.normal, self.character.avoid_distance))
             self.target = Static(target_pos, 0)
             return Seek.get_steering(self)
-
+        for obstacle in self.obstacles:
+            circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius, self.character.position, self.character.position+ray_vector, False)
+            if len(circle_collision) > 0:
+                pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
+                end = (-circle_collision[0][0], -circle_collision[0][1])
+                target_pos = np.add(circle_collision[0],
+                                    np.multiply(end, self.character.avoid_distance))
+                self.target = Static(target_pos, 0)
+                return Seek.get_steering(self)
         return Wander.get_steering(self)
+
+
+class CollisionAvoidance(ObstacleAvoidanceWander):
+    max_acceleration = 2
+    targets = []
+    radius = 8
+
+    def __init__(self, character, target, targets):
+
+        super().__init__(character, target)
+        self.targets = targets
+
+    def get_steering(self):
+        shortest_time = float('inf')
+        first_target = None
+        first_min_separation = -1
+        first_relative_pos = None
+        first_relative_vel = None
+        steering = SteeringOutput()
+        for target in self.targets:
+            relative_pos = np.subtract(target.position, self.character.position)
+            relative_vel = np.subtract(target.velocity, self.character.velocity)
+            relative_speed = length(relative_vel)
+            time_to_collision = np.divide(np.dot(relative_pos, relative_vel),
+                                          np.multiply(relative_speed, relative_speed))
+            distance = length(relative_pos)
+            min_separation = np.subtract(distance, np.multiply(relative_speed, shortest_time))
+            if min_separation > 2 * self.radius:
+                continue
+            if 0 < time_to_collision < shortest_time:
+                shortest_time = time_to_collision
+                first_target = target
+                first_min_separation = min_separation
+                first_relative_pos = relative_pos
+                first_relative_vel = relative_vel
+            if not first_target:
+                print(f"No first target")
+                break  # ObstacleAvoidanceWander.get_steering(self)
+            if first_min_separation <= 0 or distance < 2 * self.radius:
+                relative_pos = np.subtract(first_target.position, self.character.position)
+            else:
+                relative_pos = np.add(first_relative_pos, np.multiply(first_relative_vel, shortest_time))
+            relative_pos = normalize(relative_pos)
+            steering.linear = np.multiply(relative_pos, self.max_acceleration)
+            print(f"Returning steering")
+            return steering
+        return ObstacleAvoidanceWander.get_steering(self)
 
 
 class Zombie(Kinematic):
     steering = None
     target = None
-    max_acceleration = 10
+    max_acceleration = 100
     radius = ZOMBIE_RADIUS
     other_zombies = []
-    avoid_distance = 20
-    look_ahead = 100
+    obstacles = []
+    avoid_distance = 2000
+    look_ahead = 40
 
     def set_target(self, target_position):
         self.target = Static(target_position, 0)
 
     def set_kinematic_target(self, target):
         self.target = target
+
+    def set_obstacles(self, obstacles):
+        self.obstacles = obstacles
 
     def set_steering(self, option):
         if option == "Seek":
@@ -439,9 +570,11 @@ class Zombie(Kinematic):
         elif option == "Align":
             self.steering = Align(self, self.target)
         elif option == "Obstacle_Avoidance":
-            self.steering = ObstacleAvoidance(self, self.target)
+            self.steering = ObstacleAvoidance(self, self.target, self.obstacles)
         elif option == "Obstacle_Avoidance_Wander":
-            self.steering = ObstacleAvoidanceWander(self, self.target)
+            self.steering = ObstacleAvoidanceWander(self, self.target, self.obstacles)
+        elif option == "Collision_Avoidance":
+            self.steering = CollisionAvoidance(self, self.target, self.other_zombies)
 
     def run(self):
         self.update(self.steering.get_steering(), ZOMBIE_MAX_SPEED, ZOMBIE_TIME)
