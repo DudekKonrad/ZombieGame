@@ -1,11 +1,9 @@
-import random
 import numpy as np
 import pygame.time
 from numpy.linalg import norm
 
 from Variables.map_variables import *
 from Variables.hero_variables import *
-from Zombie.Zombie import Zombie
 
 
 def get_center(coordinates):
@@ -90,8 +88,6 @@ class Hero:
                 if self.check_if_collide(future_position, obstacle):
                     return
             self.step_down(self.coordinates)
-        if keys[pygame.K_s]:
-            self.spawn_enemy()
 
     def hero_shoot(self):
         time_since_enter = pygame.time.get_ticks() - self.shooting_time
@@ -156,13 +152,6 @@ class Hero:
         self.world.enemies.remove(enemy)
         self.killed_enemies += 1
 
-    def spawn_enemy(self):
-        random_x = random.randint(FRAME_SIZE, SCREEN_WIDTH - FRAME_SIZE)
-        random_y = random.randint(FRAME_SIZE, SCREEN_HEIGHT - FRAME_SIZE)
-        enemy = Zombie([random_x, random_y])
-        self.world.enemies.append(enemy)
-        return enemy
-
     def draw_shoot(self, destination_point):
         end_position = calculate_laser_direction(get_center(self.coordinates)[0], get_center(self.coordinates)[1],
                                                  destination_point[0],
@@ -221,8 +210,6 @@ class Hero:
 
     def check_if_collide(self, coordinates, obstacle):
         if dist(get_center(coordinates), obstacle.coordinates) <= self.collision_circle_r + obstacle.radius:
-            obstacle.color = (255, 190, 92)
             return True
         else:
-            obstacle.color = (100, 100, 100)
             return False

@@ -25,7 +25,7 @@ class Map:
                 self.obstacles.append(obstacle_candidate)
 
     def draw_map(self):
-        pygame.draw.rect(window, FRAME_COLOR, [0, 0, SCREEN_WIDTH, SCREEN_HEIGHT], FRAME_SIZE)
+        pygame.draw.rect(window, FRAME_COLOR, [0, 0, SCREEN_WIDTH, SCREEN_HEIGHT], FRAME_SIZE-5)
         for obstacle in self.obstacles:
             obstacle.draw_obstacle(window)
 

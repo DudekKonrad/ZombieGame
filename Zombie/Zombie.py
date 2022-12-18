@@ -67,10 +67,10 @@ class Kinematic:
                 self.velocity = self.velocity.normalize()
                 self.velocity = self.velocity * max_speed
 
-        # Drawing velocity vector
-        pygame.draw.line(window, (0, 0, 255), self.position, self.position + self.velocity, 1)
+        # Show velocity vector
+        # pygame.draw.line(window, (0, 0, 255), self.position, self.position + self.velocity, 1)
 
-        # Drawing orientation
+        # Show orientation
         # vec = pygame.math.Vector2(0, 100).rotate(self.angle)
         # pt_x, pt_y = self.position[0] + vec.x, self.position[1] + vec.y
         # new_o = getNewOrientation(self.rotation, self.velocity)
@@ -216,7 +216,6 @@ def line_intersection(line1, line2):
         u = ((x1 - x3) * (y1 - y2) - (y1 - y3) * (x1 - x2)) / m
         x, y = (x1 + t * (x2 - x1)), (y1 + t * (y2 - y1))
         if 0 <= t <= 1 and 0 <= u <= 1:
-            pygame.draw.circle(window, (100, 100, 255), (x, y), 6)
             return x, y
         else:
             return None
@@ -286,8 +285,8 @@ class ObstacleAvoidance(Seek):
         ray_vector = ray_vector.normalize()
         ray_vector *= self.character.look_ahead
 
-        # Drawing ray vector
-        pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 2)
+        # Show ray vector
+        # pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 2)
 
         # Collision with walls
         collision = self.collision_detector.get_collision(self.character.position, ray_vector)
@@ -300,7 +299,7 @@ class ObstacleAvoidance(Seek):
                                                                 self.character.position,
                                                                 self.character.position + ray_vector, False)
             if len(circle_collision) > 0:
-                pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
+                # pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
                 end = (self.character.position, circle_collision[0])
                 n = get_normal_vector_up(end)
                 target_pos = circle_collision[0] + n * self.character.avoid_distance
@@ -344,6 +343,35 @@ class ObstacleAvoidanceWander(Wander):
         return Wander.get_steering(self)
 
 
+class Separation(ObstacleAvoidanceWander):
+
+    def __init__(self, character, target, obstacles, targets):
+        super().__init__(character, target, obstacles)
+        self.targets = targets
+        self.threshold = 35
+        self.decay_coefficient = 10000000
+        self.max_acceleration = 1000000
+
+    def get_steering(self):
+        steering = SteeringOutput()
+        for target in self.targets:
+            direction = target.position - self.character.position
+            distance = direction.length()
+            #print(f"Distance: {distance}")
+            pygame.draw.circle(window, (0, 0, 255), self.character.position, self.threshold, 1)
+            if distance < self.threshold:
+                print(f"Distance {distance} < threshold: {self.threshold}")
+                self.character.color = (255, 0, 0)
+                strength = min(self.decay_coefficient/(distance*distance), self.max_acceleration)
+                direction = direction.normalize()
+                steering.linear -= strength * direction
+            else:
+                self.character.color = ZOMBIE_COLOR
+                return ObstacleAvoidanceWander.get_steering(self)
+        return steering
+
+
+
 class CollisionAvoidance(ObstacleAvoidanceWander):
 
     def __init__(self, character, target, targets, obstacles):
@@ -351,7 +379,7 @@ class CollisionAvoidance(ObstacleAvoidanceWander):
         super().__init__(character, target, obstacles)
         self.max_acceleration = 100
         self.targets = targets
-        self.radius = 4
+        self.radius = 8
 
     def get_steering(self):
         shortest_time = float('inf')
@@ -362,14 +390,13 @@ class CollisionAvoidance(ObstacleAvoidanceWander):
         steering = SteeringOutput()
         for target in self.targets:
             relative_pos = target.position - self.character.position
-            relative_vel = target.velocity - self.character.velocity
+            relative_vel = target.velocity - self.character.velocity + Vector2(0.00001, 0)
             relative_speed = relative_vel.length()
-            if relative_speed == 0:
-                relative_speed = 1
-            time_to_collision = relative_pos.dot(relative_vel) / relative_speed * relative_speed
+            time_to_collision = (relative_pos.dot(relative_vel)) / (relative_speed * relative_speed)
             distance = relative_pos.length()
             min_separation = distance - relative_speed * shortest_time
-            if min_separation > 2 * self.radius: continue
+            if min_separation > 2 * self.radius:
+                continue
             if 0 < time_to_collision < shortest_time:
                 shortest_time = time_to_collision
                 first_target = target
@@ -377,16 +404,16 @@ class CollisionAvoidance(ObstacleAvoidanceWander):
                 first_relative_pos = relative_pos
                 first_relative_vel = relative_vel
             if not first_target:
-                break  # ObstacleAvoidanceWander.get_steering(self)
+                return #return ObstacleAvoidanceWander.get_steering(self)
             if first_min_separation <= 0 or distance < 2 * self.radius:
-                relative_pos = first_target.position - self.character.position + Vector2(1, 0)
+                relative_pos = first_target.position - self.character.position
                 self.character.color = (255, 0, 0)
             else:
                 self.character.color = ZOMBIE_COLOR
                 relative_pos = first_relative_pos + first_relative_vel * shortest_time
             relative_pos = relative_pos.normalize()
-            steering.linear = relative_pos * self.character.max_acceleration
-            # return steering
+            steering.linear = -relative_pos * self.character.max_acceleration
+            return steering
 
         return ObstacleAvoidanceWander.get_steering(self)
 
@@ -394,12 +421,12 @@ class CollisionAvoidance(ObstacleAvoidanceWander):
 class Zombie(Kinematic):
     steering = None
     target = None
-    max_acceleration = 100
+    max_acceleration = 40
     radius = ZOMBIE_RADIUS
     other_zombies = []
     obstacles = []
-    avoid_distance = 200
-    look_ahead = 40
+    avoid_distance = 1000
+    look_ahead = 50
     color = ZOMBIE_COLOR
 
     def set_target(self, target_position):
@@ -424,6 +451,8 @@ class Zombie(Kinematic):
             self.steering = ObstacleAvoidance(self, self.target, self.obstacles)
         elif option == "Obstacle_Avoidance_Wander":
             self.steering = ObstacleAvoidanceWander(self, self.target, self.obstacles)
+        elif option == "Separation":
+            self.steering = Separation(self, self.target, self.obstacles, self.other_zombies)
         elif option == "Collision_Avoidance":
             self.steering = CollisionAvoidance(self, self.target, self.other_zombies, self.obstacles)
 
