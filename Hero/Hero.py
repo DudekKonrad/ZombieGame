@@ -3,7 +3,6 @@ import numpy as np
 import pygame.time
 from numpy.linalg import norm
 
-from Variables.global_variables import *
 from Variables.map_variables import *
 from Variables.hero_variables import *
 from Zombie.Zombie import Zombie

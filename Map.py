@@ -1,18 +1,16 @@
 import random
 import pygame.draw
 from Obstacle.Obstacle import *
-from Variables.global_variables import *
 from Variables.map_variables import *
 from Variables.obstacle_variables import *
 import math
 
 
 class Map:
-    screen = None
-    obstacles = []
-    enemies = []
-
     def __init__(self, screen):
+        self.screen = None
+        self.obstacles = []
+        self.enemies = []
         self.screen = screen
 
     def make_map(self):

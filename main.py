@@ -12,18 +12,17 @@ zombies = []
 for i in range(NUMBER_OF_ENEMIES):
     random_x = random.randint(FRAME_SIZE, SCREEN_WIDTH - FRAME_SIZE)
     random_y = random.randint(FRAME_SIZE, SCREEN_HEIGHT - FRAME_SIZE)
-    zombies.append(Zombie([random_x, random_y]))
+    zombie_to_add = Zombie(Vector2(random_x, random_y))
+    zombies.append(zombie_to_add)
 
 Map.enemies = zombies
 Hero = Hero(HERO_START_POSITION, HERO_SPEED, Map)
-
 
 # Initialize zombies
 for z in zombies:
     z.other_zombies = zombies
     z.set_other_zombies()
     z.set_obstacles(Map.obstacles)
-
 
 running = True
 while running:

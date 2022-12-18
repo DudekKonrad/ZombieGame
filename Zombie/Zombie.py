@@ -2,17 +2,10 @@ import math
 import pygame.draw
 import numpy as np
 import random
+
+from pygame import Vector2
 from Variables.map_variables import *
 from Variables.zombie_variables import *
-from numpy.linalg import norm
-
-
-def length(vector):
-    return np.linalg.norm(vector)
-
-
-def normalize(vector):
-    return np.divide(vector, length(vector))
 
 
 def orientation_scalar_to_vector(vector):
@@ -36,50 +29,46 @@ def map_to_range(radian):
     return radian
 
 
+def getNewOrientation(orientation, velocity):
+    if velocity.length() > 0:
+        return math.atan2(-velocity[0], velocity[1])
+    else:
+        return orientation
+
+
 class Static:
-    position = [0.0, 0.0]
-    orientation = 0.0
 
     def __init__(self, position, orientation):
         self.position = position
         self.orientation = orientation
 
 
-def getNewOrientation(orientation, velocity):
-    if length(velocity) > 0:
-        return math.atan2(-velocity[0], velocity[1])
-    else:
-        return orientation
-
-
 class Kinematic:
-    position = [1.0, 1.0]
-    orientation = 0.0
-    velocity = [1.0, 0.0]
-    rotation = 0.0
-    angle = 0
 
     def __init__(self, position):
-        self.position = position
+        self.position = Vector2(position)
+        self.orientation = 0.0
+        self.velocity = Vector2(1, 1)
+        self.rotation = 0
+        self.angle = 0
         pass
 
     def update(self, steering, max_speed, my_time):
         # Velocity before changes
-        #
         if steering is not None:
-            self.position = np.add(self.position, np.multiply(self.velocity, my_time))
-            self.orientation = np.add(self.orientation, np.multiply(self.rotation, my_time))
+            self.position = self.position + self.velocity * my_time
+            self.orientation = self.orientation + self.rotation * my_time
 
-            self.velocity = np.add(self.velocity, np.multiply(steering.linear, my_time))
+            self.velocity = self.velocity + steering.linear * my_time
             # self.orientation = getNewOrientation(self.orientation, self.velocity)
-            self.rotation = np.add(self.rotation, np.multiply(steering.angular, my_time))
+            self.rotation = self.rotation + steering.angular * my_time
 
-            if length(self.velocity) > max_speed:
-                self.velocity = normalize(self.velocity)
-                self.velocity = np.multiply(self.velocity, max_speed)
+            if self.velocity.length() > max_speed:
+                self.velocity = self.velocity.normalize()
+                self.velocity = self.velocity * max_speed
 
         # Drawing velocity vector
-        pygame.draw.line(window, (0, 0, 255), self.position, self.position + self.velocity, 2)
+        pygame.draw.line(window, (0, 0, 255), self.position, self.position + self.velocity, 1)
 
         # Drawing orientation
         # vec = pygame.math.Vector2(0, 100).rotate(self.angle)
@@ -90,16 +79,14 @@ class Kinematic:
 
 
 class SteeringOutput:
-    linear = [0, 0]
-    angular = 0
 
     def __init__(self):
+        self.linear = Vector2(0, 0)
+        self.angular = 0
         pass
 
 
 class Seek:
-    character = None
-    target = None
 
     def __init__(self, character, target):
         self.character = character
@@ -107,9 +94,9 @@ class Seek:
 
     def get_steering(self):
         steering = SteeringOutput()
-        steering.linear = np.subtract(self.target.position, self.character.position)
-        steering.linear = normalize(steering.linear)
-        steering.linear = np.multiply(steering.linear, self.character.max_acceleration)
+        steering.linear = self.target.position - self.character.position
+        steering.linear = steering.linear.normalize()
+        steering.linear = steering.linear * self.character.max_acceleration
         self.character.orientation = getNewOrientation(self.character.orientation, steering.linear)
         steering.angular = 0.0
 
@@ -117,8 +104,6 @@ class Seek:
 
 
 class Flee:
-    character = None
-    target = None
 
     def __init__(self, character, target):
         self.character = character
@@ -126,23 +111,21 @@ class Flee:
 
     def get_steering(self):
         steering = SteeringOutput()
-        steering.linear = np.subtract(self.character.position, self.target.position)
-        steering.linear = normalize(steering.linear)
-        steering.linear = np.multiply(steering.linear, self.character.max_acceleration)
+        steering.linear = self.character.position - self.target.position
+        steering.linear = steering.linear.normalize()
+        steering.linear = steering.linear * self.character.max_acceleration
         steering.angular = 0.0
         return steering
 
 
 class Arrive:
-    character = None
-    target = None
-    target_radius = 10
-    slow_radius = 0.0
-    time_to_target = 0.1
 
     def __init__(self, character, target):
         self.character = character
         self.target = target
+        self.target_radius = 10
+        self.slow_radius = 0.0
+        self.time_to_target = 0.1
 
     def update_character(self, position, orientation):
         self.character.position = position
@@ -150,66 +133,26 @@ class Arrive:
 
     def get_steering(self):
         steering = SteeringOutput()
-        direction = np.subtract(self.target.position, self.character.position)
-        distance = length(direction)
+        direction = self.target.position - self.character.position
+        distance = direction.length()
         if distance < self.target_radius:
             return None
         if distance > self.slow_radius:
-            target_speed = self.character.max_speed
+            target_speed = self.character.max_acceleration
         else:
-            target_speed = np.divide(np.multiply(self.character.max_speed, distance), self.slow_radius)
+            target_speed = self.character.max_speed * distance / self.slow_radius
         target_velocity = direction
-        target_velocity = normalize(target_velocity)
-        target_velocity = np.multiply(target_velocity, target_speed)
+        target_velocity = target_velocity.normalize()
+        target_velocity = target_velocity * target_speed
 
-        steering.linear = np.subtract(target_velocity, self.character.velocity)
-        steering.linear = np.divide(steering.linear, self.time_to_target)
+        steering.linear = target_velocity - self.character.velocity
+        steering.linear = steering.linear / self.time_to_target
 
-        if length(steering.linear) > self.character.max_acceleration:
-            steering.linear = normalize(steering.linear)
-            steering.linear = np.multiply(steering.linear, self.character.max_acceleration)
+        if steering.linear.length() > self.character.max_acceleration:
+            steering.linear = steering.linear.normalize()
+            steering.linear = steering.linear * self.character.max_acceleration
 
         steering.angular = 0.0
-        return steering
-
-
-class Align:
-    character = None
-    target = None
-    max_angular_acceleration = 10.8
-    max_rotation = 900.6
-    target_radius = 0.1
-    slow_radius = 0.2
-    time_to_target = 0.7
-
-    def __init__(self, character, target):
-        self.character = character
-        self.target = target
-
-    def get_steering(self):
-        steering = SteeringOutput()
-        rotation = np.subtract(self.target.orientation, self.character.orientation)
-        rotation = map_to_range(rotation)
-        rotation_size = abs(rotation)
-
-        if rotation_size < self.target_radius:
-            return None
-
-        if rotation_size > self.slow_radius:
-            target_rotation = self.max_rotation
-        else:
-            target_rotation = np.divide(np.multiply(self.max_rotation, rotation_size), self.slow_radius)
-
-        target_rotation = np.multiply(target_rotation, np.divide(rotation, rotation_size))
-        steering.angular = np.subtract(target_rotation, self.character.rotation)
-        steering.angular = np.divide(steering.angular, self.time_to_target)
-
-        angular_acceleration = abs(steering.angular)
-        if angular_acceleration > self.max_angular_acceleration:
-            steering.angular = np.divide(steering.angular, angular_acceleration)
-            steering.angular = np.divide(steering.angular, self.max_angular_acceleration)
-
-        steering.linear = 0.0
         return steering
 
 
@@ -218,78 +161,14 @@ class Wander(Seek):
     wander_ring_distance = 400
 
     def get_steering(self):
+        if self.character.velocity.length() == 0: return
         self.circle_pos = self.get_circle_pos()
-        target_pos = np.add(self.circle_pos,
-                            pygame.math.Vector2(self.wander_ring_distance, 0).rotate(random.uniform(0, 360)))
+        target_pos = self.circle_pos + pygame.math.Vector2(self.wander_ring_distance, 0).rotate(random.uniform(0, 360))
         self.target = Static(target_pos, 0)
         return Seek.get_steering(self)
 
     def get_circle_pos(self):
-        x = np.add(self.character.position, np.multiply(normalize(self.character.velocity), self.wander_ring_distance))
-        return x
-
-
-class Separation:
-    character = None
-    targets = []
-    actual_steering = None
-    threshold = 10.5
-    decay_coefficient = 0.6
-    max_acceleration = 4.0
-
-    def __init__(self, character, targets, steering):
-        self.character = character
-        self.targets = targets
-        self.actual_steering = steering
-
-    def get_steering(self):
-        steering = SteeringOutput()
-        for target in self.targets:
-            direction = np.subtract(target.position, self.character.position)
-            distance = length(direction)
-            if distance < self.threshold:
-                strength = min(np.divide(self.decay_coefficient, np.multiply(distance, distance)),
-                               self.max_acceleration)
-                direction = normalize(direction)
-                steering.linear = np.add(steering.linear, np.multiply(strength, direction))
-        return steering
-
-
-class Separation_Wander:
-    character = None
-    target = None
-    other_targets = None
-    circle_pos = [0, 0]
-    wander_ring_distance = 2
-    threshold = 100
-    decay_coefficient = 2000
-    max_acceleration = 10.0
-
-    def __init__(self, character, targets):
-        self.character = character
-        self.other_targets = targets
-
-    def get_steering(self):
-        self.circle_pos = self.get_circle_pos()
-        target_pos = self.circle_pos + pygame.math.Vector2(self.wander_ring_distance, 0).rotate(random.uniform(0, 360))
-        self.target = Static(target_pos, 0)
-        seek = Seek(self.character, self.target)
-        steering = SteeringOutput()
-        for target in self.other_targets:
-            direction = np.subtract(target.position, self.character.position)
-            distance = length(direction)
-            if distance < self.threshold:
-                self.character.color = (255, 0, 0)
-                self.target.color = (255, 10, 100)
-                strength = min(np.divide(self.decay_coefficient, np.multiply(distance, distance)),
-                               self.max_acceleration)
-                direction = normalize(direction)
-                seek.get_steering().linear = np.add(steering.linear, np.multiply(strength, direction))
-                return seek.get_steering()
-        return seek.get_steering()
-
-    def get_circle_pos(self):
-        x = np.add(self.character.position, np.multiply(normalize(self.character.velocity), self.wander_ring_distance))
+        x = self.character.position + self.character.velocity.normalize() * self.wander_ring_distance
         return x
 
 
@@ -350,7 +229,7 @@ def get_normal_vector_down(line):
     y2 = line[1][1]
     dx = x2 - x1
     dy = y2 - y1
-    return -dy, dx
+    return Vector2(-dy, dx)
 
 
 def get_normal_vector_up(line):
@@ -360,143 +239,137 @@ def get_normal_vector_up(line):
     y2 = line[1][1]
     dx = x2 - x1
     dy = y2 - y1
-    return dy, -dx
+    return Vector2(dy, -dx)
 
 
 class Collision:
-    position = None
-    normal = None
 
     def __init__(self, collide_point, normal):
-        self.position = collide_point
-        self.normal = normal
+        self.position = Vector2(collide_point)
+        self.normal = Vector2(normal)
 
 
 class Collision_Detector:
     def get_collision(self, position, move_amount):
+        # Collision with walls
         top_collision = line_intersection(TOP_BORDER, (position, position + move_amount))
         left_collision = line_intersection(LEFT_BORDER, (position, position + move_amount))
         right_collision = line_intersection(RIGHT_BORDER, (position, position + move_amount))
         bottom_collision = line_intersection(BOTTOM_BORDER, (position, position + move_amount))
         if top_collision is not None:
             normal_vector = get_normal_vector_down(TOP_BORDER)
-            # pygame.draw.line(window, (233, 32, 111), top_collision, normal_vector, 2)
             collision = Collision(top_collision, normal_vector)
             return collision
         if right_collision is not None:
             normal_vector = get_normal_vector_down(RIGHT_BORDER)
-            # pygame.draw.line(window, (233, 32, 111), right_collision, normal_vector, 2)
             collision = Collision(right_collision, normal_vector)
             return collision
         if left_collision is not None:
             normal_vector = get_normal_vector_up(LEFT_BORDER)
-            # pygame.draw.line(window, (233, 32, 111), left_collision, normal_vector, 2)
             collision = Collision(left_collision, normal_vector)
             return collision
         if bottom_collision is not None:
             normal_vector = get_normal_vector_up(BOTTOM_BORDER)
-            # pygame.draw.line(window, (233, 32, 111), bottom_collision, normal_vector, 2)
             collision = Collision(bottom_collision, normal_vector)
             return collision
 
 
 class ObstacleAvoidance(Seek):
-    collision_detector = Collision_Detector()
-    obstacles = []
 
     def __init__(self, character, target, obstacles):
         super().__init__(character, target)
+        self.collision_detector = Collision_Detector()
         self.obstacles = obstacles
 
     def get_steering(self):
         ray_vector = self.character.velocity
-        ray_vector = normalize(ray_vector)
+        ray_vector = ray_vector.normalize()
         ray_vector *= self.character.look_ahead
-        pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 4)
+
+        # Drawing ray vector
+        pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 2)
 
         # Collision with walls
         collision = self.collision_detector.get_collision(self.character.position, ray_vector)
         if collision is not None:
-            self.target.position = np.add(collision.position,
-                                          np.multiply(collision.normal, self.character.avoid_distance))
-        # Collision with obstacles NEED FIXES!!!
+            self.target.position = collision.position + collision.normal * self.character.avoid_distance
+
+        # Collision with obstacles
         for obstacle in self.obstacles:
             circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius,
                                                                 self.character.position,
                                                                 self.character.position + ray_vector, False)
             if len(circle_collision) > 0:
                 pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
-                end = (-circle_collision[0][0], -circle_collision[0][1])  # NEED FIX HERE
-                target_pos = np.add(circle_collision[0],
-                                    np.multiply(end, self.character.avoid_distance))
+                end = (self.character.position, circle_collision[0])
+                n = get_normal_vector_up(end)
+                target_pos = circle_collision[0] + n * self.character.avoid_distance
                 self.target.position = target_pos
         return Seek.get_steering(self)
 
 
 class ObstacleAvoidanceWander(Wander):
-    collision_detector = Collision_Detector()
-    obstacles = []
 
     def __init__(self, character, target, obstacles):
         super().__init__(character, target)
+        self.collision_detector = Collision_Detector()
         self.obstacles = obstacles
 
     def get_steering(self):
         ray_vector = self.character.velocity
-        ray_vector = normalize(ray_vector)
+        ray_vector = ray_vector.normalize()
         ray_vector *= self.character.look_ahead
-        pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 3)
+        pygame.draw.line(window, (255, 255, 255), self.character.position, self.character.position + ray_vector, 2)
 
         # Collision with walls
         collision = self.collision_detector.get_collision(self.character.position, ray_vector)
         if collision is not None:
-            target_pos = np.add(collision.position,
-                                np.multiply(collision.normal, self.character.avoid_distance))
+            target_pos = collision.position + collision.normal * self.character.avoid_distance
             self.target = Static(target_pos, 0)
             return Seek.get_steering(self)
 
-        # Collision with obstacles NEED FIXES
+        # Collision with obstacles
         for obstacle in self.obstacles:
             circle_collision = circle_line_segment_intersection(obstacle.coordinates, obstacle.radius,
                                                                 self.character.position,
                                                                 self.character.position + ray_vector, False)
             if len(circle_collision) > 0:
                 pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
-                end = (-circle_collision[0][0]-10, -circle_collision[0][1]-20)  # FIX HERE
-                target_pos = np.add(circle_collision[0],
-                                    np.multiply(end, self.character.avoid_distance))
+                end = (self.character.position, circle_collision[0])
+                normal_vector = get_normal_vector_up(end)
+                target_pos = circle_collision[0] + normal_vector * self.character.avoid_distance
                 self.target = Static(target_pos, 0)
                 return Seek.get_steering(self)
+
         return Wander.get_steering(self)
 
 
 class CollisionAvoidance(ObstacleAvoidanceWander):
-    max_acceleration = 2
-    targets = []
-    radius = 8
 
-    def __init__(self, character, target, targets):
+    def __init__(self, character, target, targets, obstacles):
 
-        super().__init__(character, target)
+        super().__init__(character, target, obstacles)
+        self.max_acceleration = 100
         self.targets = targets
+        self.radius = 4
 
     def get_steering(self):
         shortest_time = float('inf')
         first_target = None
-        first_min_separation = -1
+        first_min_separation = None
         first_relative_pos = None
         first_relative_vel = None
         steering = SteeringOutput()
         for target in self.targets:
-            relative_pos = np.subtract(target.position, self.character.position)
-            relative_vel = np.subtract(target.velocity, self.character.velocity)
-            relative_speed = length(relative_vel)
-            time_to_collision = np.divide(np.dot(relative_pos, relative_vel),
-                                          np.multiply(relative_speed, relative_speed))
-            distance = length(relative_pos)
-            min_separation = np.subtract(distance, np.multiply(relative_speed, shortest_time))
-            if min_separation > 2 * self.radius:
-                continue
+            relative_pos = target.position - self.character.position
+            relative_vel = target.velocity - self.character.velocity
+            relative_speed = relative_vel.length()
+            if relative_speed == 0:
+                relative_speed = 1
+            time_to_collision = relative_pos.dot(relative_vel) / relative_speed * relative_speed
+            distance = relative_pos.length()
+            min_separation = distance - relative_speed * shortest_time
+            if min_separation > 2 * self.radius: continue
             if 0 < time_to_collision < shortest_time:
                 shortest_time = time_to_collision
                 first_target = target
@@ -506,12 +379,15 @@ class CollisionAvoidance(ObstacleAvoidanceWander):
             if not first_target:
                 break  # ObstacleAvoidanceWander.get_steering(self)
             if first_min_separation <= 0 or distance < 2 * self.radius:
-                relative_pos = np.subtract(first_target.position, self.character.position)
+                relative_pos = first_target.position - self.character.position + Vector2(1, 0)
+                self.character.color = (255, 0, 0)
             else:
-                relative_pos = np.add(first_relative_pos, np.multiply(first_relative_vel, shortest_time))
-            relative_pos = normalize(relative_pos)
-            steering.linear = np.multiply(relative_pos, self.max_acceleration)
-            return steering
+                self.character.color = ZOMBIE_COLOR
+                relative_pos = first_relative_pos + first_relative_vel * shortest_time
+            relative_pos = relative_pos.normalize()
+            steering.linear = relative_pos * self.character.max_acceleration
+            # return steering
+
         return ObstacleAvoidanceWander.get_steering(self)
 
 
@@ -524,6 +400,7 @@ class Zombie(Kinematic):
     obstacles = []
     avoid_distance = 200
     look_ahead = 40
+    color = ZOMBIE_COLOR
 
     def set_target(self, target_position):
         self.target = Static(target_position, 0)
@@ -543,23 +420,19 @@ class Zombie(Kinematic):
             self.steering = Arrive(self, self.target)
         elif option == "Wander":
             self.steering = Wander(self, self.target)
-        elif option == "Separation_Wander":
-            self.steering = Separation_Wander(self, self.other_zombies)
-        elif option == "Align":
-            self.steering = Align(self, self.target)
         elif option == "Obstacle_Avoidance":
             self.steering = ObstacleAvoidance(self, self.target, self.obstacles)
         elif option == "Obstacle_Avoidance_Wander":
             self.steering = ObstacleAvoidanceWander(self, self.target, self.obstacles)
         elif option == "Collision_Avoidance":
-            self.steering = CollisionAvoidance(self, self.target, self.other_zombies)
+            self.steering = CollisionAvoidance(self, self.target, self.other_zombies, self.obstacles)
 
     def run(self):
         self.update(self.steering.get_steering(), ZOMBIE_MAX_SPEED, ZOMBIE_TIME)
         self.draw()
 
     def draw(self):
-        pygame.draw.circle(window, ZOMBIE_COLOR, self.position, ZOMBIE_RADIUS)
+        pygame.draw.circle(window, self.color, self.position, ZOMBIE_RADIUS)
 
     def set_other_zombies(self):
         temp_zombies = []
