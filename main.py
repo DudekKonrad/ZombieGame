@@ -34,12 +34,34 @@ while running:
     Map.draw_map()
     Hero.hero_input()
 
+    # for z in zombies:
+    #     if math.dist(z.position, Hero.get_position()) < ZOMBIE_CHASE_DISTANCE:
+    #         z.set_target(Hero.get_position())
+    #         z.set_steering("Obstacle_Avoidance")
+    #     else:
+    #         z.set_steering("Obstacle_Avoidance_Wander")
+    #     z.run()
+
+    # print("hero = ", Hero.get_position())
+    
+    # get_hide_coordinates(Hero.get_position(), Map.get_obstacle_position(0))
+    pom = 0
     for z in zombies:
-        if math.dist(z.position, Hero.get_position()) < ZOMBIE_CHASE_DISTANCE:
-            z.set_target(Hero.get_position())
+        # print("!!!!", z.get_position())
+        # print("!!!", Map.get_nearest_obstacle(z.get_position()))
+        # if counter == OBSTACLES_NUMBER - 1:
+            # counter = 0
+        pom = Map.get_nearest_obstacle(z.get_position()) 
+        if pom > -1:
+            print(pom)
+            print(Map.get_obstacle_position(pom))
+            z.set_target(get_hide_coordinates(Hero.get_position(), Map.get_obstacle_position(pom)))
             z.set_steering("Obstacle_Avoidance")
         else:
             z.set_steering("Obstacle_Avoidance_Wander")
+        # z.set_target(Map.get_obstacle_position(0))
+            
         z.run()
+        # counter = counter + 1
 
     pygame.display.update()

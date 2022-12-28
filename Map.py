@@ -36,3 +36,20 @@ class Map:
             if dist < int(obstacle.radius * 4):
                 can_add = False
         return can_add
+
+    def get_obstacle_position(self, num):
+        return self.obstacles[num].coordinates
+
+    def get_nearest_obstacle(self, point):
+        dist = 0.0
+        pom_obstacle = [0.0, 0.0]
+        counter = 0
+        for obstacle in self.obstacles:
+            pom_obstacle = obstacle.coordinates
+            # print(pom_obstacle)
+            # dist = math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
+            dist = math.sqrt( math.pow(point[0] - pom_obstacle[0], 2) + math.pow(point[1] - pom_obstacle[1], 2))
+            if dist < 100:
+                return counter
+            counter = counter + 1
+        return -1

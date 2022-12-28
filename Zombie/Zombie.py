@@ -35,6 +35,30 @@ def getNewOrientation(orientation, velocity):
     else:
         return orientation
 
+def get_hide_coordinates(hero_coordinates, obstacle_coordinates):
+    hero_coordinates = list(hero_coordinates)
+    obstacle_to_hero = [0, 0]
+    hide_coordinates = [0, 0]
+    
+    #wektor od zaslony do gracza
+    obstacle_to_hero[0] = hero_coordinates[0] - obstacle_coordinates[0]
+    obstacle_to_hero[1] = hero_coordinates[1] - obstacle_coordinates[1]
+    
+    #wektor przeciwny
+    obstacle_to_hero[0] = - obstacle_to_hero[0]
+    obstacle_to_hero[1] = - obstacle_to_hero[1]
+
+    #wektor jednostkowy
+    vector_length = math.sqrt(pow(obstacle_to_hero[0], 2) + pow(obstacle_to_hero[1], 2))
+    obstacle_to_hero[0] = 30 * (obstacle_to_hero[0] / vector_length)
+    obstacle_to_hero[1] = 30 * (obstacle_to_hero[1] / vector_length)
+
+    hide_coordinates[0] = obstacle_coordinates[0] + obstacle_to_hero[0]
+    hide_coordinates[1] = obstacle_coordinates[1] + obstacle_to_hero[1]
+
+    return hide_coordinates
+
+
 
 class Static:
 
@@ -469,4 +493,6 @@ class Zombie(Kinematic):
             if zombie is not self:
                 temp_zombies.append(zombie)
         self.other_zombies = temp_zombies
-#branch test
+    
+    def get_position(self):
+        return self.position
