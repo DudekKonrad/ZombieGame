@@ -469,3 +469,4 @@ class Zombie(Kinematic):
             if zombie is not self:
                 temp_zombies.append(zombie)
         self.other_zombies = temp_zombies
+#branch test
