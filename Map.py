@@ -53,3 +53,18 @@ class Map:
                 return counter
             counter = counter + 1
         return -1
+
+    def get_nearest_obstacle_but_ignoring_one(self, point, ignored_obstacle_index):
+        dist = 0.0
+        pom_obstacle = [0.0, 0.0]
+        counter = 0
+        for obstacle in self.obstacles:
+            if counter != ignored_obstacle_index:
+                pom_obstacle = obstacle.coordinates
+                # print(pom_obstacle)
+                # dist = math.sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
+                dist = math.sqrt( math.pow(point[0] - pom_obstacle[0], 2) + math.pow(point[1] - pom_obstacle[1], 2))
+                if dist < 100:
+                    return counter
+            counter = counter + 1
+        return -1

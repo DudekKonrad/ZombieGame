@@ -51,8 +51,8 @@ def get_hide_coordinates(hero_coordinates, obstacle_coordinates):
 
     # wektor jednostkowy
     vector_length = math.sqrt(pow(obstacle_to_hero[0], 2) + pow(obstacle_to_hero[1], 2))
-    obstacle_to_hero[0] = 30 * (obstacle_to_hero[0] / vector_length)
-    obstacle_to_hero[1] = 30 * (obstacle_to_hero[1] / vector_length)
+    obstacle_to_hero[0] = (OBSTACLE_MAX_RADIUS + 10) * (obstacle_to_hero[0] / vector_length)
+    obstacle_to_hero[1] = (OBSTACLE_MAX_RADIUS + 10) * (obstacle_to_hero[1] / vector_length)
 
     hide_coordinates[0] = obstacle_coordinates[0] + obstacle_to_hero[0]
     hide_coordinates[1] = obstacle_coordinates[1] + obstacle_to_hero[1]
@@ -383,7 +383,7 @@ class Separation(ObstacleAvoidanceWander):
             distance = direction.length()
             pygame.draw.circle(window, (0, 0, 255), self.character.position, self.threshold, 1)
             if distance < self.threshold:
-                print(f"Distance {distance} < threshold: {self.threshold}")
+                # print(f"Distance {distance} < threshold: {self.threshold}")
                 self.character.color = (255, 0, 0)
                 strength = min(self.decay_coefficient / (distance * distance), self.max_acceleration)
                 direction = direction.normalize()
@@ -477,6 +477,8 @@ class Zombie(Kinematic):
     avoid_distance = 1000
     look_ahead = 50
     color = ZOMBIE_COLOR
+    time_counter = 0
+    how_long_zombie_will_stay_behind_obstacle = 9000 #2000 means time_counter = 2000 will trigger lefting obstacle
 
     def set_target(self, target_position):
         self.target = Static(target_position, 0)
@@ -527,3 +529,15 @@ class Zombie(Kinematic):
             if self.position.distance_to(z.position) <= threshold:
                 counter += 1
         return counter
+
+    def get_position(self):
+        return self.position
+
+    def change_to_left_obstacle_color(self):
+        self.color = (100, 0, 105)
+
+    def change_to_attack_color(self):
+        self.color = (255, 0, 0)
+
+    def set_obstacle_left_value(self):
+        self.how_long_zombie_will_stay_behind_obstacle = random.randint(5000, 7000)
