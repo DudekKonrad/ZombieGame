@@ -540,4 +540,4 @@ class Zombie(Kinematic):
         self.color = (255, 0, 0)
 
     def set_obstacle_left_value(self):
-        self.how_long_zombie_will_stay_behind_obstacle = random.randint(5000, 7000)
+        self.how_long_zombie_will_stay_behind_obstacle = random.randint(1000, 3000)
