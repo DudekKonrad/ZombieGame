@@ -11,4 +11,4 @@ class Obstacle:
         self.radius = radius
 
     def draw_obstacle(self, screen):
-        pygame.draw.circle(screen, self.color, self.coordinates, self.radius-4)
+        pygame.draw.circle(screen, self.color, self.coordinates, self.radius-8)

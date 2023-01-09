@@ -115,14 +115,10 @@ class Hero:
                 if distance_to_obstacle <= obstacle.radius:
                     if mouse_x > center[0] and obstacle.coordinates[0] > center[0]:
                         if_hit_obstacle = True
-                        obstacle.color = (123, 154, 21)
                         hit_obstacle = obstacle
                     if mouse_x < center[0] and obstacle.coordinates[0] < center[0]:
                         if_hit_obstacle = True
-                        obstacle.color = (123, 154, 21)
                         hit_obstacle = obstacle
-                else:
-                    obstacle.color = (100, 100, 100)
 
             for enemy in self.world.enemies:
                 p3 = np.asarray(enemy.position)
