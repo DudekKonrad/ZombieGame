@@ -52,13 +52,13 @@ while running:
                 z.set_target(get_hide_coordinates(Hero.get_position(), Map.get_obstacle_position(pom)))
                 z.set_steering("Obstacle_Avoidance")
                 z.time_counter = z.time_counter + 1 #inkrementuje counter w momencie gdy sie chowam za przeszkoda
-        elif z.count_nearby_zombies(20) >= 3:
+        elif z.count_nearby_zombies(40) >= 2:
             z.change_to_attack_color()
             z.set_target(Hero.get_position())
             z.set_steering("Obstacle_Avoidance")
         else:
             z.time_counter = 0
-            z.set_steering("Separation")
+            z.set_steering("Obstacle_Avoidance_Wander")
         z.run()
     print(" ")
 
