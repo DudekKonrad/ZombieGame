@@ -12,10 +12,8 @@ zombies = []
 for i in range(NUMBER_OF_ENEMIES):
     random_x = random.randint(FRAME_SIZE, SCREEN_WIDTH - FRAME_SIZE)
     random_y = random.randint(FRAME_SIZE, SCREEN_HEIGHT - FRAME_SIZE)
-    for obstacle in Map.obstacles:
-        if ((random_x - obstacle.coordinates[0]) ^ 2 + (random_y - obstacle.coordinates[1]) ^ 2) > obstacle.radius ^ 2+20:
-            zombie_to_add = Zombie(Vector2(random_x, random_y), None)
-            zombies.append(zombie_to_add)
+    zombie_to_add = Zombie(Vector2(random_x, random_y), None)
+    zombies.append(zombie_to_add)
 
 Map.enemies = zombies
 Hero = Hero(HERO_START_POSITION, HERO_SPEED, Map)
@@ -41,7 +39,12 @@ while running:
     pom = 0
     for z in zombies:
         pom = Map.get_nearest_obstacle(z.position)
-        print(z.count_nearby_zombies(20))
+        for o in Map.obstacles:
+            ov = Vector2(o.coordinates[0], o.coordinates[1])
+            z.count_nearby_zombies(20)
+            if z.position.distance_to(ov) <= o.radius-4:
+                z.position = z.nearest_zombie.position
+
         if pom > -1 and z.count_nearby_zombies(20) < 3:
             if z.time_counter > z.how_long_zombie_will_stay_behind_obstacle:  # jezeli dany zombiak bedzie przy przeeszkodzie ale minie okreslona ilosc czasu to wejdzie do tego ifa i zacznie suzkac innej przeszkody
                 pom2 = pom
@@ -52,14 +55,14 @@ while running:
                 z.set_target(get_hide_coordinates(Hero.get_position(), Map.get_obstacle_position(pom)))
                 z.set_steering("Obstacle_Avoidance")
                 z.time_counter = z.time_counter + 1  # inkrementuje counter w momencie gdy sie chowam za przeszkoda
-        elif z.count_nearby_zombies(20) >= 3:
-            #z.change_to_attack_color()
-            z.set_target(Hero.get_position())
+        elif z.count_nearby_zombies(60) >= 3:
             z.separate = False
+            z.set_target(Hero.get_position())
             z.set_steering("Obstacle_Avoidance")
         else:
             z.time_counter = 0
             z.set_steering("Obstacle_Avoidance_Wander")
+
         z.run()
 
     pygame.display.update()

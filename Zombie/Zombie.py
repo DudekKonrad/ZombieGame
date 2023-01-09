@@ -56,7 +56,6 @@ def get_hide_coordinates(hero_coordinates, obstacle_coordinates):
 
     hide_coordinates[0] = obstacle_coordinates[0] + obstacle_to_hero[0]
     hide_coordinates[1] = obstacle_coordinates[1] + obstacle_to_hero[1]
-    pygame.draw.circle(window, (32, 211, 233), hide_coordinates, 4)
     return hide_coordinates
 
 
@@ -117,13 +116,11 @@ class Kinematic:
 
             sep = self.separation()
 
-            if sep is not None and self.separate:
-                self.velocity -= sep
-
             if self.velocity.length() > max_speed:
                 self.velocity = self.velocity.normalize()
                 self.velocity = self.velocity * max_speed
-            pygame.draw.line(window, (255, 0, 0), self.position, self.position + self.velocity)
+            if sep is not None and self.separate:
+                self.velocity -= sep
 
 
 class SteeringOutput:
@@ -376,7 +373,6 @@ class ObstacleAvoidanceWander(Wander):
                                                                 self.character.position,
                                                                 self.character.position + ray_vector, False)
             if len(circle_collision) > 0:
-                pygame.draw.circle(window, (1, 24, 222), circle_collision[0], 5)
                 end = (self.character.position, circle_collision[0])
                 normal_vector = get_normal_vector_up(end)
                 target_pos = circle_collision[0] + normal_vector * self.character.avoid_distance
@@ -386,118 +382,24 @@ class ObstacleAvoidanceWander(Wander):
         return Wander.get_steering(self)
 
 
-class Separation(ObstacleAvoidanceWander):
-
-    def __init__(self, character, target, obstacles, targets):
-        super().__init__(character, target, obstacles)
-        self.targets = targets
-        self.threshold = 35
-        self.decay_coefficient = 10000
-        self.max_acceleration = 1000
-
-    def get_steering(self):
-        steering = SteeringOutput()
-        for target in self.targets:
-            direction = target.position - self.character.position
-            distance = direction.length()
-            pygame.draw.circle(window, (0, 0, 255), self.character.position, self.threshold, 1)
-            if distance < self.threshold:
-                # print(f"Distance {distance} < threshold: {self.threshold}")
-                self.character.color = (255, 0, 0)
-                strength = min(self.decay_coefficient / (distance * distance), self.max_acceleration)
-                direction = direction.normalize()
-                steering.linear -= strength * direction
-            else:
-                self.character.color = ZOMBIE_COLOR
-                return ObstacleAvoidanceWander.get_steering(self)
-        return steering
-
-
-class Separation2(ObstacleAvoidance):
-
-    def __init__(self, character, target, obstacles, targets):
-        super().__init__(character, target, obstacles)
-        self.targets = targets
-        self.threshold = 35
-        self.decay_coefficient = 10000
-        self.max_acceleration = 1000
-
-    def get_steering(self):
-        steering = SteeringOutput()
-        for target in self.targets:
-            direction = target.position - self.character.position
-            distance = direction.length()
-            if distance < self.threshold:
-                self.character.color = (255, 0, 0)
-                strength = min(self.decay_coefficient / (distance * distance), self.max_acceleration)
-                direction = direction.normalize()
-                steering.linear -= strength * direction
-            else:
-                self.character.color = ZOMBIE_COLOR
-                return ObstacleAvoidance.get_steering(self)
-        return steering
-
-
-class CollisionAvoidance(ObstacleAvoidanceWander):
-
-    def __init__(self, character, target, targets, obstacles):
-
-        super().__init__(character, target, obstacles)
-        self.targets = targets
-        self.radius = 8
-
-    def get_steering(self):
-        shortest_time = float('inf')
-        first_target = None
-        first_min_separation = None
-        first_relative_pos = None
-        first_relative_vel = None
-        steering = SteeringOutput()
-        for target in self.targets:
-            first_target = None
-            relative_pos = target.position - self.character.position
-            relative_vel = target.velocity - self.character.velocity + Vector2(0.00001, 0)
-            relative_speed = relative_vel.length()
-            time_to_collision = (relative_pos.dot(relative_vel)) / (relative_speed * relative_speed)
-            distance = relative_pos.length()
-            min_separation = distance - relative_speed * shortest_time
-            if min_separation > 2 * self.radius:
-                continue
-            if 0 < time_to_collision < shortest_time:
-                shortest_time = time_to_collision
-                first_target = target
-                first_min_separation = min_separation
-                first_relative_pos = relative_pos
-                first_relative_vel = relative_vel
-            if not first_target:
-                return ObstacleAvoidanceWander.get_steering(self)
-            if first_min_separation <= 0 or distance < 2 * self.radius:
-                relative_pos = first_target.position - self.character.position
-                self.character.color = (255, 0, 0)
-            else:
-                self.character.color = ZOMBIE_COLOR
-                relative_pos = first_relative_pos + first_relative_vel * shortest_time
-            relative_pos = relative_pos.normalize()
-            steering.linear = -relative_pos * self.character.max_acceleration
-            return steering
-
-        return ObstacleAvoidanceWander.get_steering(self)
-
-
 class Zombie(Kinematic):
     steering = None
     target = None
-    max_acceleration = 40
+    max_acceleration = 70
     radius = ZOMBIE_RADIUS
     obstacles = []
-    avoid_distance = 1000
-    look_ahead = 50
+    avoid_distance = 999999999
+    look_ahead = 25
     color = ZOMBIE_COLOR
     time_counter = 0
-    how_long_zombie_will_stay_behind_obstacle = 9000  # 2000 means time_counter = 2000 will trigger lefting obstacle
+    how_long_zombie_will_stay_behind_obstacle = 5000  # 2000 means time_counter = 2000 will trigger lefting obstacle
+    nearest_zombie = None
 
     def set_target(self, target_position):
         self.target = Static(target_position, 0)
+
+    def set_hero(self, hero_pos):
+        self.hero = Static(hero_pos, 0)
 
     def set_kinematic_target(self, target):
         self.target = target
@@ -518,12 +420,6 @@ class Zombie(Kinematic):
             self.steering = ObstacleAvoidance(self, self.target, self.obstacles)
         elif option == "Obstacle_Avoidance_Wander":
             self.steering = ObstacleAvoidanceWander(self, self.target, self.obstacles)
-        elif option == "Separation":
-            self.steering = Separation(self, self.target, self.obstacles, self.others)
-        elif option == "Separation2":
-            self.steering = Separation2(self, self.target, self.obstacles, self.others)
-        elif option == "Collision_Avoidance":
-            self.steering = CollisionAvoidance(self, self.target, self.others, self.obstacles)
 
     def run(self):
         self.update(self.steering.get_steering(), ZOMBIE_MAX_SPEED, ZOMBIE_TIME)
@@ -541,9 +437,15 @@ class Zombie(Kinematic):
 
     def count_nearby_zombies(self, threshold):
         counter = 0
+        nearest_zombie = None
+        dist = 99999
         for z in self.others:
             if self.position.distance_to(z.position) <= threshold:
                 counter += 1
+            x = z.position.distance_to(self.position)
+            if x < dist:
+                self.nearest_zombie = z
+                dist = x
         return counter
 
     def get_position(self):
@@ -556,4 +458,4 @@ class Zombie(Kinematic):
         self.color = (255, 0, 0)
 
     def set_obstacle_left_value(self):
-        self.how_long_zombie_will_stay_behind_obstacle = random.randint(3000, 9000)
+        self.how_long_zombie_will_stay_behind_obstacle = random.randint(2000, 5000)
